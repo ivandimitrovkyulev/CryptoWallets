@@ -1,8 +1,10 @@
+import os
+
 from lxml import html
 from time import sleep
 from typing import Dict
 from datetime import datetime
-
+from multiprocessing.dummy import Pool
 from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -33,9 +35,30 @@ def dict_complement_b(
     return b_complement
 
 
+def send_message(
+        address: str,
+        found_txns: dict,
+) -> None:
+    """
+    Sends a Telegram message with txns from Dictionary.
+
+    :param address: Address to be scraping
+    :param found_txns: Dictionary with transactions
+    """
+    # If a txn is found
+    if len(found_txns) > 0:
+        for txn in found_txns.keys():
+            info = found_txns[txn]
+            message = f"New Txn from {address}\n{txn}\n{info}"
+            # Send Telegram message with found txns
+            telegram_send_message(message)
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"{timestamp} - {message}")
+
+
 def get_last_transactions(
         driver: Chrome,
-        no_of_txns: int = 20,
+        no_of_txns: int = 50,
         wait_time: int = 15,
 ) -> dict:
     """
@@ -77,38 +100,31 @@ def get_last_transactions(
     return transactions
 
 
-def scrape_wallet(
-        address: str,
+def scrape_wallets(
+        address_list: list,
         sleep_time: int = 30,
 ) -> None:
+
     driver = Chrome(service=Service(CHROME_LOCATION))
     # construct url and open webpage
-    url = f"https://debank.com/profile/{address}/history"
-    driver.get(url)
+    driver_list = [driver.get(f"https://debank.com/profile/{address}/history")
+                   for address in address_list]
 
-    old_txns = get_last_transactions(driver)
     while True:
+        with Pool(os.cpu_count()) as pool:
+            old_txns = pool.map(get_last_transactions, driver_list)
 
-        new_txns = get_last_transactions(driver)
-        found_txns = dict_complement_b(old_txns, new_txns)
+            sleep(sleep_time)
+            # Try to refresh page
+            try:
+                for driver in driver_list:
+                    driver.refresh()
+            except WebDriverException as e:
+                print(f"Error in {scrape_wallets.__name__}: {e}")
 
-        # If a txn is found
-        if len(found_txns) > 0:
-            message = ""
-            for txn in found_txns.keys():
-                info = found_txns[txn]
-                message = f"New Txn from {address}\n{txn}\n{info}"
-                # Send Telegram message with found txns
-                telegram_send_message(message)
-                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                print(f"{timestamp} - {message}")
+            new_txns = pool.map(get_last_transactions, driver_list)
 
-        # Update transaction dict
-        old_txns = get_last_transactions(driver)
-
-        sleep(sleep_time)
-        # Try to refresh page
-        try:
-            driver.refresh()
-        except WebDriverException as e:
-            print(f"Error in {scrape_wallet.__name__}: {e}")
+            # Send Telegram message if txns found
+            for address, old_txn, new_txn in zip(address_list, old_txns, new_txns):
+                found_txns = dict_complement_b(old_txn, new_txn)
+                send_message(address, found_txns)
