@@ -5,8 +5,10 @@ from time import sleep
 from typing import Dict
 from datetime import datetime
 from multiprocessing.dummy import Pool
+
 from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
@@ -58,6 +60,7 @@ def send_message(
 
 def get_last_transactions(
         driver: Chrome,
+        tab_name: str,
         no_of_txns: int = 50,
         wait_time: int = 15,
 ) -> dict:
@@ -65,18 +68,22 @@ def get_last_transactions(
     Searches DeBank for Transaction history for an address and returns latest transactions.
 
     :param driver: Selenium webdriver object
+    :param tab_name: Chrome Tab to switch to
     :param no_of_txns: Number of latest transactions to return
     :param wait_time: No. of secs to wait for web response
     :return: Python Dictionary with  transactions
     """
+    driver.switch_to.window(tab_name)
+    driver.find_element(By.TAG_NAME, "body").send_keys(Keys.COMMAND + "r")
+
     # Wait for website to respond, if driver error raised re-try until resolved
     while True:
         try:
             WebDriverWait(driver, wait_time).until(ec.presence_of_element_located(
                 (By.CLASS_NAME, "History_tableLine__3dtlF")))
         except WebDriverException or TimeoutException:
-            sleep(wait_time)
-            driver.refresh()
+            sleep(3)
+            driver.find_element(By.TAG_NAME, "body").send_keys(Keys.COMMAND + "r")
         else:
             break
 
@@ -107,22 +114,28 @@ def scrape_wallets(
 
     driver = Chrome(service=Service(CHROME_LOCATION))
     # construct url and open webpage
-    driver_list = [driver.get(f"https://debank.com/profile/{address}/history")
-                   for address in address_list]
+    args = []
+    for address in address_list:
+        driver.execute_script(f"window.open('https://debank.com/profile/{address}/history')")
+        tab_name = driver.window_handles[-1]
+        args.append((driver, tab_name))
+
+    # args = [(driver, tab_name) for tab_name in driver.window_handles[1:]]
+    for arg in args:
+        print(arg)
 
     while True:
         with Pool(os.cpu_count()) as pool:
-            old_txns = pool.map(get_last_transactions, driver_list)
+            old_txns = pool.starmap(get_last_transactions, args)
 
-            sleep(sleep_time)
+            sleep(8)
             # Try to refresh page
-            try:
-                for driver in driver_list:
-                    driver.refresh()
-            except WebDriverException as e:
-                print(f"Error in {scrape_wallets.__name__}: {e}")
+            #try:
+            #    pool.starmap(driver.refresh, [() for _ in range(len(args))])
+            #except WebDriverException as e:
+            #    print(f"Error in {scrape_wallets.__name__}: {e}")
 
-            new_txns = pool.map(get_last_transactions, driver_list)
+            new_txns = pool.starmap(get_last_transactions, args)
 
             # Send Telegram message if txns found
             for address, old_txn, new_txn in zip(address_list, old_txns, new_txns):
