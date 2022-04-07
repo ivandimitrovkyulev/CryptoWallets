@@ -1,24 +1,32 @@
 import os
-
 from lxml import html
 from time import sleep
 from typing import Dict
 from datetime import datetime
-from multiprocessing.dummy import Pool
+from multiprocessing.dummy import Pool, Lock
 
 from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
-
 from selenium.common.exceptions import (
     WebDriverException,
     TimeoutException
 )
+
 from common.message import telegram_send_message
 from common.variables import CHROME_LOCATION
+
+
+# Open Chromium web driver
+options = Options()
+options.add_argument('--headless')
+options.add_argument('--disable-gpu')
+driver = Chrome(service=Service(CHROME_LOCATION), options=options)
+# Setup threading lock
+lock = Lock()
 
 
 def dict_complement_b(
@@ -58,8 +66,23 @@ def send_message(
             print(f"{timestamp} - {message}")
 
 
+def refresh_tab(
+        tab: str,
+) -> None:
+    """
+    Refreshes a tab given it's tab name
+
+    :param tab: Name of driver tab
+    """
+    global driver
+
+    lock.acquire()
+    driver.switch_to.window(tab)
+    driver.refresh()
+    lock.release()
+
+
 def get_last_transactions(
-        driver: Chrome,
         tab_name: str,
         no_of_txns: int = 50,
         wait_time: int = 15,
@@ -67,14 +90,15 @@ def get_last_transactions(
     """
     Searches DeBank for Transaction history for an address and returns latest transactions.
 
-    :param driver: Selenium webdriver object
     :param tab_name: Chrome Tab to switch to
     :param no_of_txns: Number of latest transactions to return
     :param wait_time: No. of secs to wait for web response
     :return: Python Dictionary with  transactions
     """
+    global driver
+
+    lock.acquire()
     driver.switch_to.window(tab_name)
-    driver.find_element(By.TAG_NAME, "body").send_keys(Keys.COMMAND + "r")
 
     # Wait for website to respond, if driver error raised re-try until resolved
     while True:
@@ -82,13 +106,14 @@ def get_last_transactions(
             WebDriverWait(driver, wait_time).until(ec.presence_of_element_located(
                 (By.CLASS_NAME, "History_tableLine__3dtlF")))
         except WebDriverException or TimeoutException:
-            sleep(3)
-            driver.find_element(By.TAG_NAME, "body").send_keys(Keys.COMMAND + "r")
+            sleep(1)
+            driver.refresh()
         else:
             break
 
     root = html.fromstring(driver.page_source)
     table = root.find_class("History_table__9zhFG")[0]
+    lock.release()
 
     transactions = {}
     for index, row in enumerate(table.xpath('./div')):
@@ -109,35 +134,28 @@ def get_last_transactions(
 
 def scrape_wallets(
         address_list: list,
-        sleep_time: int = 30,
+        sleep_time: int = 60,
 ) -> None:
 
-    driver = Chrome(service=Service(CHROME_LOCATION))
     # construct url and open webpage
-    args = []
+    tab_names = []
     for address in address_list:
         driver.execute_script(f"window.open('https://debank.com/profile/{address}/history')")
         tab_name = driver.window_handles[-1]
-        args.append((driver, tab_name))
-
-    # args = [(driver, tab_name) for tab_name in driver.window_handles[1:]]
-    for arg in args:
-        print(arg)
+        tab_names.append(tab_name)
 
     while True:
         with Pool(os.cpu_count()) as pool:
-            old_txns = pool.starmap(get_last_transactions, args)
+            old_txns = pool.map(get_last_transactions, tab_names)
 
-            sleep(8)
-            # Try to refresh page
-            #try:
-            #    pool.starmap(driver.refresh, [() for _ in range(len(args))])
-            #except WebDriverException as e:
-            #    print(f"Error in {scrape_wallets.__name__}: {e}")
+            # Sleep and refresh tabs
+            sleep(sleep_time)
+            pool.map(refresh_tab, tab_names)
 
-            new_txns = pool.starmap(get_last_transactions, args)
+            new_txns = pool.map(get_last_transactions, tab_names)
 
             # Send Telegram message if txns found
             for address, old_txn, new_txn in zip(address_list, old_txns, new_txns):
+                # If any new txns -> send Telegram message
                 found_txns = dict_complement_b(old_txn, new_txn)
                 send_message(address, found_txns)
