@@ -12,7 +12,7 @@ Clone the project:
 ```
 git clone https://github.com/ivandimitrovkyulev/CryptoWallets.git
 
-cd WalletScrape
+cd CryptoWallets
 ```
 
 Create a virtual environment in the current working directory and activate it:
@@ -28,7 +28,7 @@ Install all third-party project dependencies:
 pip install -r requirements.txt
 ```
 
-You will also need to save the following variables in a **.env** file in ../WalletScrape/common/:
+You will also need to save the following variables in a **.env** file in ../CryptoWallets/common/:
 ```
 CHROME_LOCATION=<your/web/driver/path/location> 
 
@@ -42,7 +42,7 @@ CHAT_ID=<the-id-of-your-telegram-chat>
 <br/>
 
 ```
-cd WalletScrape
+cd CryptoWallets
 
 python main.py
 ```
