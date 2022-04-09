@@ -1,9 +1,12 @@
 from typing import Optional
+from datetime import datetime
 
 from requests import (
     post,
     Response
 )
+
+from common.format import format_data
 from common.variables import (
     TOKEN,
     CHAT_ID,
@@ -50,3 +53,25 @@ def telegram_send_message(
     post_request = post(url, data)
 
     return post_request
+
+
+def send_message(
+        address: str,
+        found_txns: dict,
+) -> None:
+    """
+    Sends a Telegram message with txns from Dictionary.
+
+    :param address: Address to be scraping
+    :param found_txns: Dictionary with transactions
+    """
+    # If a txn is found
+    if len(found_txns) > 0:
+        for txn in found_txns.keys():
+            # Format dict value
+            info = format_data(found_txns[txn])
+            message = f"New txn from {address}:\n{txn}\n{info}"
+            # Send Telegram message with found txns
+            telegram_send_message(message)
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"{timestamp} - {message}")

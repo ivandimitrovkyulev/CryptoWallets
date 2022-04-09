@@ -1,9 +1,15 @@
 from time import sleep
 from functools import wraps
 
-from typing import Callable, TypeVar
+from typing import (
+    Callable,
+    TypeVar,
+)
 
-from selenium.common.exceptions import WebDriverException, TimeoutException
+from selenium.common.exceptions import (
+    WebDriverException,
+    TimeoutException,
+)
 
 
 # Define a Function type

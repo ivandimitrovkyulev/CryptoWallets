@@ -1,6 +1,6 @@
+from datetime import datetime
 from common.helpers import scrape_wallets
 from common.variables import address_list
-from datetime import datetime
 
 
 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

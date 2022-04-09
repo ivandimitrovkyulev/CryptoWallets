@@ -1,14 +1,15 @@
 import os
 from lxml import html
 from time import sleep
-from typing import Dict
-from datetime import datetime
-from multiprocessing.dummy import Pool, Lock
+
+from multiprocessing.dummy import (
+    Pool,
+    Lock,
+)
 
 from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.common.exceptions import (
@@ -16,54 +17,18 @@ from selenium.common.exceptions import (
     TimeoutException
 )
 
-from common.message import telegram_send_message
-from common.variables import CHROME_LOCATION
+from common.format import dict_complement_b
+from common.message import send_message
+from common.variables import (
+    CHROME_LOCATION,
+    options,
+)
 
 
 # Open Chromium web driver
-options = Options()
-options.add_argument('--headless')
-options.add_argument('--disable-gpu')
 driver = Chrome(service=Service(CHROME_LOCATION), options=options)
 # Setup threading lock
 lock = Lock()
-
-
-def dict_complement_b(
-        old_dict: dict,
-        new_dict: dict,
-) -> Dict[str, list]:
-    """Compares dictionary A & B and returns the relative complement of A in B.
-    Basically returns all members in B that are not in A as a python dictionary -
-    as in Venn's diagrams.
-
-    :param old_dict: dictionary A
-    :param new_dict: dictionary B"""
-
-    b_complement = {k: new_dict[k] for k in new_dict if k not in old_dict}
-
-    return b_complement
-
-
-def send_message(
-        address: str,
-        found_txns: dict,
-) -> None:
-    """
-    Sends a Telegram message with txns from Dictionary.
-
-    :param address: Address to be scraping
-    :param found_txns: Dictionary with transactions
-    """
-    # If a txn is found
-    if len(found_txns) > 0:
-        for txn in found_txns.keys():
-            info = found_txns[txn]
-            message = f"New Txn from {address}\n{txn}\n{info}"
-            # Send Telegram message with found txns
-            telegram_send_message(message)
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"{timestamp} - {message}")
 
 
 def refresh_tab(
@@ -117,14 +82,19 @@ def get_last_transactions(
 
     transactions = {}
     for index, row in enumerate(table.xpath('./div')):
-        transaction = row.xpath('.//text()')
         link = row.xpath('./div/div/a/@href')[0]
 
-        if 'Failed' in transaction:
-            continue
-        else:
-            # Update dict with info
-            transactions[link] = transaction
+        txn_list = []
+        for col in row.xpath('./div'):
+
+            info = col.xpath('.//text()')
+            if 'Failed' in info:
+                continue
+            else:
+                txn_list.append(info)
+
+        if len(txn_list) >= 4:
+            transactions[link] = txn_list
 
         if index >= (no_of_txns - 1):
             break
