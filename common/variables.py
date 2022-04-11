@@ -17,6 +17,7 @@ options.add_argument('--headless')
 options.add_argument('--no-sandbox')
 options.add_argument('window-size=1400,2100')
 options.add_argument('--disable-gpu')
+options.add_argument('--disable-dev-shm-usage')
 
 log_format = "%(asctime)s - %(levelname)s - %(message)s"
 
