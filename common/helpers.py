@@ -49,7 +49,7 @@ def refresh_tab(
 
 def get_last_transactions(
         tab_name: str,
-        no_of_txns: int = 50,
+        no_of_txns: int = 100,
         wait_time: int = 15,
 ) -> dict:
     """
@@ -82,6 +82,11 @@ def get_last_transactions(
 
     transactions = {}
     for index, row in enumerate(table.xpath('./div')):
+        # If limit reached, break
+        if index >= (no_of_txns - 1):
+            break
+
+        # Get link to transaction
         link = row.xpath('./div/div/a/@href')[0]
 
         txn_list = []
@@ -95,9 +100,6 @@ def get_last_transactions(
 
         if len(txn_list) >= 4:
             transactions[link] = txn_list
-
-        if index >= (no_of_txns - 1):
-            break
 
     return transactions
 

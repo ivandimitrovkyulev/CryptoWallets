@@ -10,6 +10,7 @@ from common.format import format_data
 from common.variables import (
     TOKEN,
     CHAT_ID,
+    time_format,
 )
 
 
@@ -70,8 +71,16 @@ def send_message(
         for txn in found_txns.keys():
             # Format dict value
             info = format_data(found_txns[txn])
-            message = f"New txn from {address}:\n{txn}\n{info}"
+
+            # Construct message string
+            formatted_info = ""
+            for item in info:
+                formatted_info += f"         {item}\n"
+            message = f"New txn from {address}:\n{txn}\nDetails: \n{formatted_info}"
+
             # Send Telegram message with found txns
             telegram_send_message(message)
-            timestamp = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
+
+            # Print result to terminal
+            timestamp = datetime.now().astimezone().strftime(time_format)
             print(f"{timestamp} - {message}")

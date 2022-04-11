@@ -21,7 +21,7 @@ options.add_argument('--disable-dev-shm-usage')
 
 log_format = "%(asctime)s - %(levelname)s - %(message)s"
 
-time_format = "%Y/%m/%d %H:%M:%S"
+time_format = "%Y-%m-%d %H:%M:%S, %Z"
 
 address_list = [
     "0x39de56518e136d472ef9645e7d6e1f7c6c8ed37b",

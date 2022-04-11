@@ -33,28 +33,43 @@ def format_data(
     :return: list with data
     """
     data = []
-    try:
-        # Append timestamp
-        if 'hr' in txn[0][0] and 'min' in txn[0][0]:
-            stamps = re.findall("[0-9]+", txn[0][0])
-            hours = int(stamps[0])
-            mins = int(stamps[1])
-            time_stamp = (datetime.now() - timedelta(hours=hours, minutes=mins)).strftime(time_format)
-            data.append(time_stamp)
-        elif 'min' in txn[0][0] and 'sec' in txn[0][0]:
-            stamps = re.findall("[0-9]+", txn[0][0])
-            mins = int(stamps[0])
-            secs = int(stamps[1])
-            time_stamp = (datetime.now() - timedelta(minutes=mins, seconds=secs)).strftime(time_format)
-            data.append(time_stamp)
+    if len(txn[0]) == 3:
+        data.append(txn[0][0])
+        txn[0].pop(0)
+    else:
+        try:
+            time = txn[0][0]
+            # Append timestamp
+            if 'hr' in time and 'min' in time:
+                stamps = re.findall("[0-9]+", time)
+                hours = int(stamps[0])
+                mins = int(stamps[1])
+                time_stamp = (datetime.now() - timedelta(hours=hours, minutes=mins)).astimezone().strftime(time_format)
+                data.append(time_stamp)
+            elif 'min' in time and 'sec' in time:
+                stamps = re.findall("[0-9]+", time)
+                mins = int(stamps[0])
+                secs = int(stamps[1])
+                time_stamp = (datetime.now() - timedelta(minutes=mins, seconds=secs)).astimezone().strftime(time_format)
+                data.append(time_stamp)
+            elif 'sec' in time and 'min' not in time:
+                stamps = re.findall("[0-9]+", time)
+                secs = int(stamps[0])
+                time_stamp = (datetime.now() - timedelta(seconds=secs)).astimezone().strftime(time_format)
+                data.append(time_stamp)
+            else:
+                data.append(time)
 
+        except IndexError as e:
+            print(f"{e}: {txn} skipped.")
+
+    try:
         txn_type = ""
         for item in txn[1]:
             txn_type += item + " "
         data.append(txn_type)
-
-    except IndexError as e:
-        print(f"{e}: {txn} skipped.")
+    except IndexError:
+        data.append(txn[0])
 
     if len(txn[2]) == 0:
         data.append(None)
@@ -67,11 +82,5 @@ def format_data(
             data.append(amount)
         except IndexError:
             data.append(txn[2])
-
-    try:
-        gas = txn[3][-1]
-        data.append(gas)
-    except IndexError:
-        data.append(None)
 
     return data

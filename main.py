@@ -1,9 +1,12 @@
 from datetime import datetime
 from common.helpers import scrape_wallets
-from common.variables import address_list
+from common.variables import (
+    address_list,
+    time_format,
+)
 
 
-timestamp = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
+timestamp = datetime.now().astimezone().strftime(time_format)
 addresses = ""
 for index, address in enumerate(address_list):
     addresses += f"{index + 1}. {address}\n"
