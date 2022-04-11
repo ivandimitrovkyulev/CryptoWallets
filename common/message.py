@@ -73,5 +73,5 @@ def send_message(
             message = f"New txn from {address}:\n{txn}\n{info}"
             # Send Telegram message with found txns
             telegram_send_message(message)
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            timestamp = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
             print(f"{timestamp} - {message}")

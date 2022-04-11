@@ -3,7 +3,7 @@ from common.helpers import scrape_wallets
 from common.variables import address_list
 
 
-timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+timestamp = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
 addresses = ""
 for index, address in enumerate(address_list):
     addresses += f"{index + 1}. {address}\n"
