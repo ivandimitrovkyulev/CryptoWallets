@@ -14,6 +14,8 @@ CHROME_LOCATION = os.getenv('CHROME_LOCATION')
 # Chrome driver options
 options = Options()
 options.add_argument('--headless')
+options.add_argument('--no-sandbox')
+options.add_argument('window-size=1400,2100')
 options.add_argument('--disable-gpu')
 
 log_format = "%(asctime)s - %(levelname)s - %(message)s"
