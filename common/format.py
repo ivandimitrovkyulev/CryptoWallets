@@ -1,5 +1,8 @@
 import re
-from typing import Dict
+from typing import (
+    Dict,
+    Optional,
+)
 from datetime import (
     datetime,
     timedelta,
@@ -25,43 +28,66 @@ def dict_complement_b(
 
 def format_data(
         txn: list[list, list, list, list],
-) -> list:
+        time_diff_hours: int = 0,
+        time_diff_mins: int = 30,
+) -> Optional[list]:
     """
     Takes a list of lists with transaction data and returns formatted list of information.
 
-    :param txn: List of lists containing txn data
-    :return: list with data
+    :param txn: List of lists containing txn data.
+    :param time_diff_hours: Skips transactions that occurred more than specified hours ago.
+    :param time_diff_mins: Skips transactions that occurred more than specified mins ago.
+    :return: List with formatted data
     """
     data = []
     if len(txn[0]) == 3:
-        data.append(txn[0][0])
+        data.append("Failed transaction!")
         txn[0].pop(0)
-    else:
-        try:
-            time = txn[0][0]
-            # Append timestamp
-            if 'hr' in time and 'min' in time:
-                stamps = re.findall("[0-9]+", time)
-                hours = int(stamps[0])
-                mins = int(stamps[1])
-                time_stamp = (datetime.now() - timedelta(hours=hours, minutes=mins)).astimezone().strftime(time_format)
-                data.append(time_stamp)
-            elif 'min' in time and 'sec' in time:
-                stamps = re.findall("[0-9]+", time)
-                mins = int(stamps[0])
-                secs = int(stamps[1])
-                time_stamp = (datetime.now() - timedelta(minutes=mins, seconds=secs)).astimezone().strftime(time_format)
-                data.append(time_stamp)
-            elif 'sec' in time and 'min' not in time:
-                stamps = re.findall("[0-9]+", time)
-                secs = int(stamps[0])
-                time_stamp = (datetime.now() - timedelta(seconds=secs)).astimezone().strftime(time_format)
-                data.append(time_stamp)
-            else:
-                data.append(time)
 
-        except IndexError as e:
-            print(f"{e}: {txn} skipped.")
+    try:
+        time = txn[0][0]
+        # Append timestamp
+        if 'hr' in time and 'min' in time:
+            stamps = re.findall("[0-9]+", time)
+            hours = int(stamps[0])
+            mins = int(stamps[1])
+
+            now = datetime.now()
+            time_stamp = now - timedelta(hours=hours, minutes=mins)
+
+            # Append formatted time to list
+            data.append(time_stamp.astimezone().strftime(time_format))
+
+        elif 'min' in time and 'sec' in time:
+            stamps = re.findall("[0-9]+", time)
+            mins = int(stamps[0])
+            secs = int(stamps[1])
+
+            now = datetime.now()
+            time_stamp = now - timedelta(minutes=mins, seconds=secs)
+
+            # Append formatted time to list
+            data.append(time_stamp.astimezone().strftime(time_format))
+        elif 'sec' in time and 'min' not in time:
+            stamps = re.findall("[0-9]+", time)
+            secs = int(stamps[0])
+
+            now = datetime.now()
+            time_stamp = now - timedelta(seconds=secs)
+
+            # Append formatted time to list
+            data.append(time_stamp.astimezone().strftime(time_format))
+        else:
+            now = datetime.now()
+            time_stamp = datetime.strptime(time, "%Y/%m/%d %H:%M:%S")
+            data.append(time)
+
+        # If transaction occurred more that time_difference - skip
+        if now - time_stamp > timedelta(hours=time_diff_hours, minutes=time_diff_mins):
+            return
+
+    except IndexError as e:
+        print(f"{e}: {txn} skipped.")
 
     try:
         txn_type = ""

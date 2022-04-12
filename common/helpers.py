@@ -91,12 +91,9 @@ def get_last_transactions(
 
         txn_list = []
         for col in row.xpath('./div'):
-
+            # Get text for Txn, Type, Amount, Gas fee
             info = col.xpath('.//text()')
-            if 'Failed' in info:
-                continue
-            else:
-                txn_list.append(info)
+            txn_list.append(info)
 
         if len(txn_list) >= 4:
             transactions[link] = txn_list
@@ -113,18 +110,20 @@ def scrape_wallets(
     tab_names = []
     for address in address_list:
         driver.execute_script(f"window.open('https://debank.com/profile/{address}/history')")
-        tab_name = driver.window_handles[-1]
-        tab_names.append(tab_name)
+        tab_names.append(driver.window_handles[-1])
+
+    args_old = [(tab, 100) for tab in tab_names]
+    args_new = [(tab, 50) for tab in tab_names]
 
     while True:
         with Pool(os.cpu_count()) as pool:
-            old_txns = pool.map(get_last_transactions, tab_names)
+            old_txns = pool.starmap(get_last_transactions, args_old)
 
             # Sleep and refresh tabs
             sleep(sleep_time)
             pool.map(refresh_tab, tab_names)
 
-            new_txns = pool.map(get_last_transactions, tab_names)
+            new_txns = pool.starmap(get_last_transactions, args_new)
 
             # Send Telegram message if txns found
             for address, old_txn, new_txn in zip(address_list, old_txns, new_txns):
