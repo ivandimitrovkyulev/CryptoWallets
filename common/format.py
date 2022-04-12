@@ -29,7 +29,7 @@ def dict_complement_b(
 def format_data(
         txn: list[list, list, list, list],
         time_diff_hours: int = 0,
-        time_diff_mins: int = 30,
+        time_diff_mins: int = 20,
 ) -> Optional[list]:
     """
     Takes a list of lists with transaction data and returns formatted list of information.
