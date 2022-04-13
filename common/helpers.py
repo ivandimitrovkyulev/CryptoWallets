@@ -101,7 +101,7 @@ def get_last_transactions(
     return transactions
 
 
-def scrape_wallets(
+def scrape_multiple_wallets(
         address_list: list,
         sleep_time: int = 60,
 ) -> None:
