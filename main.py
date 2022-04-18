@@ -7,11 +7,8 @@ from common.variables import time_format
 timestamp = datetime.now().astimezone().strftime(time_format)
 
 # Get input from script
-script_input = input("Enter addresses to screen: ")
-
-address_list = []
-for word in split("[\s,]+", script_input):
-    address_list.append(word)
+with open('addresses.txt', 'r') as file:
+    address_list = [adr.split("\n")[0] for adr in file.readlines() if adr != "\n"]
 
 addresses = ""
 for index, address in enumerate(address_list):
