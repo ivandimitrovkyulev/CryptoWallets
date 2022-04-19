@@ -1,5 +1,11 @@
 FROM python:3.9
 
+COPY common ./wallet-scrape/common
+COPY main.py ./wallet-scrape
+COPY .env ./wallet-scrape
+COPY requirements.txt ./wallet-scrape
+COPY README.md ./wallet-scrape
+
 # Install Chrome WebDriver
 RUN CHROMEDRIVER_VERSION=`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE` && \
     mkdir -p /opt/chromedriver-$CHROMEDRIVER_VERSION && \
@@ -16,10 +22,7 @@ RUN curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-ke
     apt-get -yqq install google-chrome-stable && \
     rm -rf /var/lib/apt/lists/*
 
-COPY common ./common
-COPY main.py .
-COPY .env .
-COPY requirements.txt .
-RUN pip3 install -r ./requirements.txt
+RUN pip3 install -r ./wallet-scrape/requirements.txt
 
-WORKDIR .
+WORKDIR ./wallet-scrape
+CMD ["pwd"]
