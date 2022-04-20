@@ -57,13 +57,13 @@ def telegram_send_message(
 
 
 def send_message(
-        address: str,
+        wallet_name: str,
         found_txns: dict,
 ) -> None:
     """
     Sends a Telegram message with txns from Dictionary.
 
-    :param address: Address to be scraping
+    :param wallet_name: Name of wallet
     :param found_txns: Dictionary with transactions
     """
     # If a txn is found
@@ -80,7 +80,7 @@ def send_message(
             formatted_info = ""
             for item in info:
                 formatted_info += f"         {item}\n"
-            message = f"New txn from {address}:\n{txn}\nDetails: \n{formatted_info}"
+            message = f"New txn from {wallet_name}:\n{txn}\nDetails: \n{formatted_info}"
 
             # Send Telegram message with found txns
             telegram_send_message(message)

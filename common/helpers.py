@@ -102,13 +102,13 @@ def get_last_transactions(
 
 
 def scrape_multiple_wallets(
-        address_list: list,
+        address_dict: dict,
         sleep_time: int = 60,
 ) -> None:
 
     # construct url and open webpage
     tab_names = []
-    for address in address_list:
+    for address in address_dict:
         driver.execute_script(f"window.open('https://debank.com/profile/{address}/history')")
         tab_names.append(driver.window_handles[-1])
 
@@ -126,7 +126,8 @@ def scrape_multiple_wallets(
             new_txns = pool.starmap(get_last_transactions, args_new)
 
             # Send Telegram message if txns found
-            for address, old_txn, new_txn in zip(address_list, old_txns, new_txns):
+            for address, old_txn, new_txn in zip(address_dict, old_txns, new_txns):
+                wallet_name = address_dict[address]['name']
                 # If any new txns -> send Telegram message
                 found_txns = dict_complement_b(old_txn, new_txn)
-                send_message(address, found_txns)
+                send_message(wallet_name, found_txns)
