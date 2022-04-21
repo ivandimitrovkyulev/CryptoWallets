@@ -73,7 +73,7 @@ def send_message(
             info = format_data(found_txns[txn])
 
             # Do not send message if Txn does not meet criteria
-            if len(info) is None:
+            if info is None:
                 break
 
             # Construct message string
