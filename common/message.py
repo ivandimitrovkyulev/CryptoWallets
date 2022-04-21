@@ -69,10 +69,10 @@ def send_message(
     # If a txn is found
     if len(found_txns) > 0:
         for txn in found_txns.keys():
-            # Format dict value and filter out old transactions
+            # Format dict value and filter out specific transactions
             info = format_data(found_txns[txn])
 
-            # If txns that
+            # Do not send message if Txn does not meet criteria
             if len(info) is None:
                 break
 

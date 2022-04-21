@@ -37,12 +37,13 @@ def format_data(
     :param txn: List of lists containing txn data.
     :param time_diff_hours: Skips transactions that occurred more than specified hours ago.
     :param time_diff_mins: Skips transactions that occurred more than specified mins ago.
-    :return: List with formatted data
+    :return: List with formatted data or None if Txn does not meet criteria
     """
     data = []
-    if len(txn[0]) == 3:
-        data.append("Failed transaction!")
-        txn[0].pop(0)
+
+    # If txn failed return none
+    if len(txn[0]) == 3 and 'Failed' in txn[0]:
+        return
 
     try:
         time = txn[0][0]
@@ -88,6 +89,10 @@ def format_data(
 
     except IndexError as e:
         print(f"{e}: {txn} skipped.")
+
+    # If txn from unwanted address return none
+    if "0x0000…0000" in txn[1]:
+        return
 
     try:
         txn_type = ""

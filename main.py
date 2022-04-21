@@ -1,11 +1,19 @@
+import os
 import sys
 import json
+from atexit import register
 from datetime import datetime
+
 from common.helpers import scrape_multiple_wallets
+from common.exceptions import exit_handler
 from common.variables import time_format
 
 
 timestamp = datetime.now().astimezone().strftime(time_format)
+program_name = os.path.basename(__file__)
+
+# Register function to be executed when script terminates
+register(exit_handler, program_name)
 
 if len(sys.argv) < 2:
     print("Please provide a string of addresses as an argument to process.\n"
