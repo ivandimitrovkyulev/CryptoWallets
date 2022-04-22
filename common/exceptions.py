@@ -66,7 +66,8 @@ def exit_handler(
 
     timestamp = datetime.now().astimezone().strftime(time_format)
 
-    message = f"{timestamp}\nWARNING: {program_name} has stopped.\n" \
+    message = f"------------------WARNING----------------\n" \
+              f"{timestamp}: {program_name} has stopped.\n" \
               f"Please contact your administrator.\n{info}"
 
     # Send debug message in Telegram and print in terminal

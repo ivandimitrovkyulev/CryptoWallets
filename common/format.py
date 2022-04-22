@@ -95,7 +95,7 @@ def format_data(
         return
 
     try:
-        txn_type = ""
+        txn_type = "Type: "
         for item in txn[1]:
             txn_type += item + " "
         data.append(txn_type)
@@ -103,10 +103,10 @@ def format_data(
         data.append(txn[0])
 
     if len(txn[2]) == 0:
-        data.append(None)
+        data.append("Swap: None")
     else:
         try:
-            amount = ""
+            amount = "Swap: "
             for i, item in enumerate(txn[2]):
                 if i % 2 == 0:
                     amount += item + txn[2][i + 1] + " "
