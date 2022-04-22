@@ -10,9 +10,9 @@ from selenium.common.exceptions import (
     WebDriverException,
     TimeoutException,
 )
-
-from common.variables import time_format
+from common.driver import chrome_driver
 from common.message import telegram_send_message
+from common.variables import time_format
 
 
 # Define a Function type
@@ -72,3 +72,6 @@ def exit_handler(
     # Send debug message in Telegram and print in terminal
     telegram_send_message(message, telegram_chat_id=telegram_chat_id)
     print(message)
+
+    # Quit chrome driver
+    chrome_driver.quit()

@@ -6,10 +6,7 @@ from multiprocessing.dummy import (
     Pool,
     Lock,
 )
-
-from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.common.exceptions import (
@@ -19,16 +16,40 @@ from selenium.common.exceptions import (
 
 from common.format import dict_complement_b
 from common.message import send_message
-from common.variables import (
-    CHROME_LOCATION,
-    options,
-)
+from common.driver import chrome_driver
+from common.variables import sleep_time
 
 
-# Open Chromium web driver
-driver = Chrome(service=Service(CHROME_LOCATION), options=options)
 # Setup threading lock
 lock = Lock()
+
+
+def print_last_transactions(
+        address_dict: dict,
+        no_of_txns: int = 3,
+) -> None:
+
+    # construct url and open webpage
+    tab_names = []
+    for address in address_dict:
+        chrome_driver.execute_script(f"window.open('https://debank.com/profile/{address}/history')")
+        tab_names.append(chrome_driver.window_handles[-1])
+
+    args = [(tab, no_of_txns) for tab in tab_names]
+
+    with Pool(os.cpu_count()) as pool:
+        batch = pool.starmap(get_last_transactions, args)
+
+        for transactions, address in zip(batch, address_dict):
+
+            print(f"Address: {address}, {address_dict[address]['name']}")
+            for info in transactions:
+                print(transactions[info])
+
+            print()
+
+    # Quit chrome driver
+    chrome_driver.quit()
 
 
 def refresh_tab(
@@ -38,12 +59,15 @@ def refresh_tab(
     Refreshes a tab given it's tab name
 
     :param tab: Name of driver tab
+    :returns: None
     """
-    global driver
 
     lock.acquire()
-    driver.switch_to.window(tab)
-    driver.refresh()
+
+    # Switch to window and refresh tab
+    chrome_driver.switch_to.window(tab)
+    chrome_driver.refresh()
+
     lock.release()
 
 
@@ -60,30 +84,29 @@ def get_last_transactions(
     :param wait_time: No. of secs to wait for web response
     :return: Python Dictionary with  transactions
     """
-    global driver
 
     lock.acquire()
-    driver.switch_to.window(tab_name)
+    chrome_driver.switch_to.window(tab_name)
 
     # Wait for website to respond, if driver error raised re-try until resolved
     while True:
         try:
-            WebDriverWait(driver, wait_time).until(ec.presence_of_element_located(
+            WebDriverWait(chrome_driver, wait_time).until(ec.presence_of_element_located(
                 (By.CLASS_NAME, "History_tableLine__3dtlF")))
         except WebDriverException or TimeoutException:
             sleep(1)
-            driver.refresh()
+            chrome_driver.refresh()
         else:
             break
 
-    root = html.fromstring(driver.page_source)
+    root = html.fromstring(chrome_driver.page_source)
     table = root.find_class("History_table__9zhFG")[0]
     lock.release()
 
     transactions = {}
     for index, row in enumerate(table.xpath('./div')):
         # If limit reached, break
-        if index >= (no_of_txns - 1):
+        if index >= int(no_of_txns):
             break
 
         # Get link to transaction
@@ -103,14 +126,21 @@ def get_last_transactions(
 
 def scrape_multiple_wallets(
         address_dict: dict,
-        sleep_time: int = 60,
+        time_to_sleep: int = sleep_time,
 ) -> None:
+    """
+    Constantly scrapes multiple addresses and sends a Telegram message if new transaction is detected.
+
+    :param address_dict: Dictionary of addresses where keys are '0x63dhf6...9vs5' values
+    :param time_to_sleep: Time to sleep between queries
+    :return: None
+    """
 
     # construct url and open webpage
     tab_names = []
     for address in address_dict:
-        driver.execute_script(f"window.open('https://debank.com/profile/{address}/history')")
-        tab_names.append(driver.window_handles[-1])
+        chrome_driver.execute_script(f"window.open('https://debank.com/profile/{address}/history')")
+        tab_names.append(chrome_driver.window_handles[-1])
 
     args_old = [(tab, 100) for tab in tab_names]
     args_new = [(tab, 50) for tab in tab_names]
@@ -120,7 +150,7 @@ def scrape_multiple_wallets(
             old_txns = pool.starmap(get_last_transactions, args_old)
 
             # Sleep and refresh tabs
-            sleep(sleep_time)
+            sleep(time_to_sleep)
             pool.map(refresh_tab, tab_names)
 
             new_txns = pool.starmap(get_last_transactions, args_new)

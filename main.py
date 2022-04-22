@@ -20,8 +20,8 @@ if len(sys.argv) < 2:
           "For example, given a 'wallets.json' file, provide var, where var='$(cat wallets.json)'")
     sys.exit()
 elif len(sys.argv) == 2:
-    text = sys.argv[-1]
-    address_dict = json.loads(text)
+    # Read input string and convert it to a dictionary
+    address_dict = json.loads(sys.argv[-1])
 
     # Print to terminal
     addresses = ""
