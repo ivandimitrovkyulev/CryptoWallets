@@ -8,6 +8,10 @@ from datetime import (
     timedelta,
 )
 from common.variables import time_format
+from common.logger import (
+    logg_spam,
+    logg_error,
+)
 
 
 def dict_complement_b(
@@ -29,7 +33,7 @@ def dict_complement_b(
 def format_data(
         txn: list[list, list, list, list],
         time_diff_hours: int = 0,
-        time_diff_mins: int = 20,
+        time_diff_mins: int = 30,
 ) -> Optional[list]:
     """
     Takes a list of lists with transaction data and returns formatted list of information.
@@ -41,19 +45,27 @@ def format_data(
     """
     data = []
 
-    # If txn failed return none
-    if len(txn[0]) == 3 and 'Failed' in txn[0]:
-        return
+    try:
+        # If txn failed return none
+        if 'Failed' in txn[0]:
+            return
+        # If txn from unwanted address return none
+        elif "0x0000…0000" in txn[1]:
+            logg_spam.warning(f"{txn}")
+            return
+    except IndexError as e:
+        # log skipped txn
+        logg_error.warning(f"{e}: {txn} skipped.")
 
     try:
         time = txn[0][0]
+        now = datetime.now()
         # Append timestamp
         if 'hr' in time and 'min' in time:
             stamps = re.findall("[0-9]+", time)
             hours = int(stamps[0])
             mins = int(stamps[1])
 
-            now = datetime.now()
             time_stamp = now - timedelta(hours=hours, minutes=mins)
 
             # Append formatted time to list
@@ -64,7 +76,6 @@ def format_data(
             mins = int(stamps[0])
             secs = int(stamps[1])
 
-            now = datetime.now()
             time_stamp = now - timedelta(minutes=mins, seconds=secs)
 
             # Append formatted time to list
@@ -73,45 +84,43 @@ def format_data(
             stamps = re.findall("[0-9]+", time)
             secs = int(stamps[0])
 
-            now = datetime.now()
             time_stamp = now - timedelta(seconds=secs)
 
             # Append formatted time to list
             data.append(time_stamp.astimezone().strftime(time_format))
         else:
-            now = datetime.now()
             time_stamp = datetime.strptime(time, "%Y/%m/%d %H:%M:%S")
             data.append(time)
 
         # If transaction occurred more that time_difference - skip
         if now - time_stamp > timedelta(hours=time_diff_hours, minutes=time_diff_mins):
             return
-
     except IndexError as e:
-        print(f"{e}: {txn} skipped.")
-
-    # If txn from unwanted address return none
-    if "0x0000…0000" in txn[1]:
-        return
+        # log skipped txn
+        logg_error.warning(f"{e}: {txn} skipped.")
 
     try:
         txn_type = "Type: "
         for item in txn[1]:
-            txn_type += item + " "
+            txn_type += f"{item} "
         data.append(txn_type)
     except IndexError:
-        data.append(txn[0])
+        data.append(txn[1])
 
-    if len(txn[2]) == 0:
-        data.append("Swap: None")
-    else:
-        try:
-            amount = "Swap: "
-            for i, item in enumerate(txn[2]):
-                if i % 2 == 0:
-                    amount += item + txn[2][i + 1] + " "
-            data.append(amount)
-        except IndexError:
-            data.append(txn[2])
+    try:
+        if len(txn[2]) == 0:
+            data.append("Swap: None")
+        else:
+            try:
+                amount = "Swap: "
+                for i, item in enumerate(txn[2]):
+                    if i % 2 == 0:
+                        amount += item + txn[2][i + 1] + " "
+                data.append(amount)
+            except IndexError:
+                data.append(txn[2])
+    except IndexError as e:
+        # log skipped txn
+        logg_error.warning(f"{e}: {txn} skipped.")
 
     return data

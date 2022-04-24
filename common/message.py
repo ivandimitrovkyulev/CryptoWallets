@@ -80,7 +80,11 @@ def send_message(
             formatted_info = ""
             for item in info:
                 formatted_info += f"         {item}\n"
-            message = f"New txn from {wallet_name}:\n{txn}\nDetails: \n{formatted_info}"
+
+            message = f"-->New txn from {wallet_name.upper()}:\n" \
+                      f"{txn}\n" \
+                      f"Details: \n" \
+                      f"{formatted_info}"
 
             # Send Telegram message with found txns
             telegram_send_message(message)

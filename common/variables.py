@@ -10,8 +10,15 @@ load_dotenv()
 TOKEN = os.getenv('TOKEN')
 CHAT_ID = os.getenv('CHAT_ID')
 
-log_format = "%(asctime)s - %(levelname)s - %(message)s"
+program_name = "wallet-scrape"
 
 time_format = "%Y-%m-%d %H:%M:%S, %Z"
 
-sleep_time = 60
+log_format = "%(asctime)s - %(levelname)s - %(message)s"
+
+sleep_time = 120
+
+ignore_list = (
+    "play888.io",
+    "gambling.io",
+)

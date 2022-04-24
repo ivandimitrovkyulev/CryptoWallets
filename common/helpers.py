@@ -17,6 +17,7 @@ from selenium.common.exceptions import (
 from common.format import dict_complement_b
 from common.message import send_message
 from common.driver import chrome_driver
+from common.logger import logg_error
 from common.variables import sleep_time
 
 
@@ -44,7 +45,8 @@ def print_last_transactions(
 
             print(f"Address: {address}, {address_dict[address]['name']}")
             for info in transactions:
-                print(transactions[info])
+                txn_details = transactions[info]
+                print(txn_details)
 
             print()
 
@@ -74,7 +76,7 @@ def refresh_tab(
 def get_last_transactions(
         tab_name: str,
         no_of_txns: int = 100,
-        wait_time: int = 15,
+        wait_time: int = 20,
 ) -> dict:
     """
     Searches DeBank for Transaction history for an address and returns latest transactions.
@@ -93,9 +95,10 @@ def get_last_transactions(
         try:
             WebDriverWait(chrome_driver, wait_time).until(ec.presence_of_element_located(
                 (By.CLASS_NAME, "History_tableLine__3dtlF")))
-        except WebDriverException or TimeoutException:
+        except WebDriverException or TimeoutException as e:
             sleep(1)
             chrome_driver.refresh()
+            logg_error.warning(f"{e} - Error while trying to load transactions. Refreshing Tab.")
         else:
             break
 
@@ -146,6 +149,7 @@ def scrape_multiple_wallets(
     args_new = [(tab, 50) for tab in tab_names]
 
     while True:
+        # Multi-scrape all addresses for txns
         with Pool(os.cpu_count()) as pool:
             old_txns = pool.starmap(get_last_transactions, args_old)
 
@@ -155,9 +159,9 @@ def scrape_multiple_wallets(
 
             new_txns = pool.starmap(get_last_transactions, args_new)
 
-            # Send Telegram message if txns found
-            for address, old_txn, new_txn in zip(address_dict, old_txns, new_txns):
-                wallet_name = address_dict[address]['name']
-                # If any new txns -> send Telegram message
-                found_txns = dict_complement_b(old_txn, new_txn)
-                send_message(wallet_name, found_txns)
+        # Send Telegram message if txns found
+        for address, old_txn, new_txn in zip(address_dict, old_txns, new_txns):
+            wallet_name = address_dict[address]['name']
+            # If any new txns -> send Telegram message
+            found_txns = dict_complement_b(old_txn, new_txn)
+            send_message(wallet_name, found_txns)
