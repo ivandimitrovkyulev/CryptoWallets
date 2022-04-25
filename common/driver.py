@@ -10,9 +10,6 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 
 
-program_name = os.path.basename(__file__)
-
-
 load_dotenv()
 # Get env variables
 CHROME_LOCATION = os.getenv('CHROME_LOCATION')

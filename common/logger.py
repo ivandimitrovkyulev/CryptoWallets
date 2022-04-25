@@ -1,9 +1,6 @@
 import logging
 
-from common.variables import (
-    program_name,
-    log_format
-)
+from common.variables import log_format
 
 
 def logger_setup(
@@ -14,8 +11,8 @@ def logger_setup(
     """
     Sets up a new logger config.
 
-    :param log_name: Name of Logger
-    :param filename: Name of Logger
+    :param log_name: Name of Logger. Make sure unique name is given for each Log
+    :param filename: Name of filename
     :param level: Logger level of severity
     :returns: An instance of the Logger class
     """
@@ -34,5 +31,5 @@ def logger_setup(
 
 
 # Configure logging settings
-logg_error = logger_setup(program_name, f"{program_name}_error.log")
-logg_spam = logger_setup(program_name, f"{program_name}_spam.log")
+log_error = logger_setup("error", f"error.log")
+log_spam = logger_setup("spam", f"spam.log")

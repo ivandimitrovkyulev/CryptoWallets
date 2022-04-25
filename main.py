@@ -4,7 +4,7 @@ import json
 from atexit import register
 from datetime import datetime
 
-from common.helpers import scrape_multiple_wallets
+from common.scrape import scrape_multiple_wallets
 from common.exceptions import exit_handler
 from common.variables import time_format
 
