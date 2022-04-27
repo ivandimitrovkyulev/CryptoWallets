@@ -17,7 +17,10 @@ from selenium.common.exceptions import (
 from common.message import send_message
 from common.driver import chrome_driver
 from common.logger import log_error
-from common.variables import sleep_time
+from common.variables import (
+    sleep_time,
+    max_wait_time,
+)
 
 
 # Setup threading lock
@@ -42,7 +45,7 @@ def dict_complement_b(
 
 def refresh_tab(
         tab: str,
-        wait_time: int = 20,
+        wait_time: int = max_wait_time,
 ) -> None:
     """
     Refreshes a tab given it's tab name
@@ -51,22 +54,20 @@ def refresh_tab(
     :param wait_time: Maximum number of seconds to wait for tab refresh
     :returns: None
     """
-
     lock.acquire()
 
     # Switch to window and refresh tab
     chrome_driver.switch_to.window(tab)
-    chrome_driver.refresh()
+    chrome_driver.execute_script("document.location.reload()")
 
-    # Wait for website to respond, if driver error raised re-try until resolved
     while True:
         try:
             WebDriverWait(chrome_driver, wait_time).until(ec.presence_of_element_located(
                 (By.CLASS_NAME, "History_tableLine__3dtlF")))
         except WebDriverException or TimeoutException:
-            sleep(1)
-            chrome_driver.refresh()
-            log_error.warning(f"Error while refreshing Tab. Trying again")
+            # Refresh page and log error
+            chrome_driver.execute_script("document.location.reload()")
+            log_error.warning(f"Error while refreshing tab.")
         else:
             break
 
@@ -76,7 +77,7 @@ def refresh_tab(
 def get_last_txns(
         tab_name: str,
         no_of_txns: int = 100,
-        wait_time: int = 20,
+        wait_time: int = max_wait_time,
 ) -> dict:
     """
     Searches DeBank for Transaction history for an address and returns latest transactions.
@@ -97,9 +98,9 @@ def get_last_txns(
             WebDriverWait(chrome_driver, wait_time).until(ec.presence_of_element_located(
                 (By.CLASS_NAME, "History_tableLine__3dtlF")))
         except WebDriverException or TimeoutException:
-            sleep(1)
-            chrome_driver.refresh()
-            log_error.warning(f"Error while trying to load transactions. Refreshing Tab.")
+            # Refresh page and log error
+            chrome_driver.execute_script("document.location.reload()")
+            log_error.warning(f"Error while trying to load transactions.")
         else:
             break
 
@@ -151,14 +152,16 @@ def scrape_multiple_wallets(
     args_new = [(tab, 50) for tab in tab_names]
 
     while True:
-        # Multi-scrape all addresses for txns
+
         with Pool(os.cpu_count()) as pool:
+            # Get latest transactions
             old_txns = pool.starmap(get_last_txns, args_old)
 
             # Sleep and refresh tabs
             sleep(time_to_sleep)
             pool.map(refresh_tab, tab_names)
 
+            # Get latest transactions
             new_txns = pool.starmap(get_last_txns, args_new)
 
         # Send Telegram message if txns found
