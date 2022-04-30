@@ -16,9 +16,11 @@ time_format = "%Y-%m-%d %H:%M:%S, %Z"
 
 log_format = "%(asctime)s - %(levelname)s - %(message)s"
 
-sleep_time = 160
+sleep_time = 180
 
-max_wait_time = 15
+request_wait_time = 30
+
+max_request_wait_time = 60
 
 ignore_list = (
     "0x0000…0000",

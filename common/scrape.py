@@ -19,7 +19,8 @@ from common.driver import chrome_driver
 from common.logger import log_error
 from common.variables import (
     sleep_time,
-    max_wait_time,
+    request_wait_time,
+    max_request_wait_time,
 )
 
 
@@ -48,7 +49,7 @@ def dict_complement_b(
 
 def refresh_tab(
         tab: str,
-        wait_time: int = max_wait_time,
+        wait_time: int = request_wait_time,
 ) -> None:
     """
     Refreshes a tab given it's tab name
@@ -80,7 +81,7 @@ def refresh_tab(
 def get_last_txns(
         tab_name: str,
         no_of_txns: int = 100,
-        wait_time: int = max_wait_time,
+        wait_time: int = request_wait_time,
 ) -> dict:
     """
     Searches DeBank for Transaction history for an address and returns latest transactions.
@@ -104,8 +105,12 @@ def get_last_txns(
             # Refresh page and log error
             chrome_driver.execute_script("document.location.reload()")
             log_error.warning(f"Error while trying to load transactions.")
+            wait_time += 1
         else:
             break
+
+        if wait_time >= max_request_wait_time:
+            wait_time = request_wait_time
 
     root = html.fromstring(chrome_driver.page_source)
     table = root.find_class("History_table__9zhFG")[0]

@@ -16,7 +16,7 @@ from common.variables import (
 
 def format_data(
         txn: list[list, list, list, list],
-        time_diff_hours: int = 1,
+        time_diff_hours: int = 3,
         time_diff_mins: int = 0,
 ) -> Optional[list]:
     """
