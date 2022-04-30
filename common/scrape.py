@@ -49,12 +49,14 @@ def dict_complement_b(
 
 def refresh_tab(
         tab: str,
+        wallet_name: str,
         wait_time: int = request_wait_time,
 ) -> None:
     """
     Refreshes a tab given it's tab name
 
     :param tab: Name of driver tab
+    :param wallet_name: Name of wallet to scrape
     :param wait_time: Maximum number of seconds to wait for tab refresh
     :returns: None
     """
@@ -71,7 +73,7 @@ def refresh_tab(
         except WebDriverException or TimeoutException:
             # Refresh page and log error
             chrome_driver.execute_script("document.location.reload()")
-            log_error.warning(f"Error while refreshing tab.")
+            log_error.warning(f"Error while refreshing tab for {wallet_name}")
         else:
             break
 
@@ -80,6 +82,7 @@ def refresh_tab(
 
 def get_last_txns(
         tab_name: str,
+        wallet_name: str,
         no_of_txns: int = 100,
         wait_time: int = request_wait_time,
 ) -> dict:
@@ -87,6 +90,7 @@ def get_last_txns(
     Searches DeBank for Transaction history for an address and returns latest transactions.
 
     :param tab_name: Chrome Tab to switch to
+    :param wallet_name: Name of wallet to scrape
     :param no_of_txns: Number of latest transactions to return
     :param wait_time: No. of secs to wait for web response
     :return: Python Dictionary with  transactions
@@ -104,7 +108,7 @@ def get_last_txns(
         except WebDriverException or TimeoutException:
             # Refresh page and log error
             chrome_driver.execute_script("document.location.reload()")
-            log_error.warning(f"Error while trying to load transactions.")
+            log_error.warning(f"Error while trying to load transactions for {wallet_name}")
             wait_time += 1
         else:
             break
@@ -152,12 +156,15 @@ def scrape_multiple_wallets(
 
     # construct url and open webpage
     tab_names = []
+    wallet_names = []
     for address in address_dict:
         chrome_driver.execute_script(f"window.open('https://debank.com/profile/{address}/history')")
         tab_names.append(chrome_driver.window_handles[-1])
+        wallet_names.append(address_dict[address]['name'])
 
-    args_old = [(tab, 100) for tab in tab_names]
-    args_new = [(tab, 50) for tab in tab_names]
+    args_old = [(tab, wallet, 100) for tab, wallet in zip(tab_names, wallet_names)]
+    args_new = [(tab, wallet, 50) for tab, wallet in zip(tab_names, wallet_names)]
+    args_refresh = [(tab, wallet) for tab, wallet in zip(tab_names, wallet_names)]
 
     while True:
 
@@ -167,7 +174,7 @@ def scrape_multiple_wallets(
 
             # Sleep and refresh tabs
             sleep(time_to_sleep)
-            pool.map(refresh_tab, tab_names)
+            pool.starmap(refresh_tab, args_refresh)
 
             # Get latest transactions
             new_txns = pool.starmap(get_last_txns, args_new)
