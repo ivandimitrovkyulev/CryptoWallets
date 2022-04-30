@@ -36,11 +36,13 @@ def telegram_send_message(
     """
 
     # if URL not provided - try TOKEN variable from the .env file
+    telegram_token = str(telegram_token)
     if telegram_token == "":
         telegram_token = TOKEN
 
     # if chat_id not provided - try CHAT_ID variable from the .env file
-    if telegram_chat_id == "":
+    telegram_chat_id = str(telegram_chat_id)
+    if telegram_chat_id == "" or telegram_chat_id is None or telegram_chat_id.lower() == "none":
         telegram_chat_id = CHAT_ID
 
     # construct url using token for a sendMessage POST request
@@ -57,14 +59,17 @@ def telegram_send_message(
 
 
 def send_message(
-        wallet_name: str,
         found_txns: dict,
+        wallet_name: str,
+        chat_id: str,
 ) -> None:
     """
     Sends a Telegram message with txns from Dictionary.
 
-    :param wallet_name: Name of wallet
     :param found_txns: Dictionary with transactions
+    :param wallet_name: Name of wallet
+    :param chat_id: Telegram chat ID for this address
+    :returns: None
     """
     # If a txn is found
     if len(found_txns) > 0:
@@ -86,8 +91,8 @@ def send_message(
                       f"Details: \n" \
                       f"{formatted_info}"
 
-            # Send Telegram message with found txns
-            telegram_send_message(message)
+            # Send Telegram message with found txns to specified chat
+            telegram_send_message(message, telegram_chat_id=chat_id)
 
             # Print result to terminal
             timestamp = datetime.now().astimezone().strftime(time_format)

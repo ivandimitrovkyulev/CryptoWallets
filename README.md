@@ -44,32 +44,29 @@ CHAT_ID=<the-id-of-your-telegram-chat>
 ```
 cd CryptoWallets
 ```
-Create a **wallets.json** file with addresses of the following structure:
+Create a **wallets.json** file with addresses of the following structure, where **name** is the name of the address to screened, **chat_id** is the Telegram chat to send transactions to of this specific address:
 
 ```
 {
-    "0xa42830ee059c17caf3c8200b44aa9813cb0720c5": {
+    "0xb62530ee059c17caf3c82300b44aa9813cb0731f6": {
         "name": "CoinBase",
-        ...,
-        ...,
+        'chat_id': ''
     },
-    "0xce0e4b5d659a7ffb0d6eb5271515f4833cf21129": {
+    "0xg55e4b5d659a7fhb0d6eb52lp515f4833cf211gy": {
         "name": "Binance",
-        ...,
-        ...,
+        'chat_id': ''
     },
-    "0xca86d57519dbff34a28eef0923b259ab07986b87": {
+    "0xju67d57519dbff34a28eef0923b259ab07985d33": {
         "name": "Crypto.com",
-        ...,
-        ...,
+        'chat_id': ''
     }
 }
 ```
-Save the contants of **wallets.json** file in a variable:
+Save the contents of the **wallets.json** file in a variable:
 ```
 var="$(cat wallets.json)"
 ```
-Now you can run the script by passing the addresses to screen:
+Now you can run the script by passing addresses to be screened to **main.py**:
 ```
 python main.py "$var"
 ```

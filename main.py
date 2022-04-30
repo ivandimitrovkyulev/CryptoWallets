@@ -1,3 +1,9 @@
+"""
+Main script that screens specified blockchain wallets and notifies when a new transaction occurs.
+To run:
+var="$(cat wallets.json)"
+python3 main.py "$var"
+"""
 import os
 import sys
 import json

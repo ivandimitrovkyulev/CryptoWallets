@@ -3,7 +3,6 @@ FROM python:3.9
 COPY common ./wallet-scrape/common
 COPY main.py ./wallet-scrape
 COPY txn_query.py ./wallet-scrape
-COPY wallets.py ./wallet-scrape
 COPY .env ./wallet-scrape
 COPY requirements.txt ./wallet-scrape
 COPY README.md ./wallet-scrape

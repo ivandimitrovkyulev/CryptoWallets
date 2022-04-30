@@ -16,7 +16,6 @@ time_format = "%Y-%m-%d %H:%M:%S, %Z"
 
 log_format = "%(asctime)s - %(levelname)s - %(message)s"
 
-#TODO
 sleep_time = 160
 
 max_wait_time = 15

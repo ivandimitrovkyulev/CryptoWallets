@@ -30,13 +30,16 @@ lock = Lock()
 def dict_complement_b(
         old_dict: dict,
         new_dict: dict,
-) -> dict[str, list]:
-    """Compares dictionary A & B and returns the relative complement of A in B.
+) -> dict:
+    """
+    Compares dictionary A & B and returns the relative complement of A in B.
     Basically returns all members in B that are not in A as a python dictionary -
     as in Venn's diagrams.
 
     :param old_dict: dictionary A
-    :param new_dict: dictionary B"""
+    :param new_dict: dictionary B
+    :returns: Python Dictionary
+    """
 
     b_complement = {k: new_dict[k] for k in new_dict if k not in old_dict}
 
@@ -167,6 +170,8 @@ def scrape_multiple_wallets(
         # Send Telegram message if txns found
         for address, old_txn, new_txn in zip(address_dict, old_txns, new_txns):
             wallet_name = address_dict[address]['name']
+            chat_id = address_dict[address]['chat_id']
+
             # If any new txns -> send Telegram message
             found_txns = dict_complement_b(old_txn, new_txn)
-            send_message(wallet_name, found_txns)
+            send_message(found_txns, wallet_name, chat_id)
