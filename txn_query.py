@@ -20,11 +20,13 @@ def print_last_txns(
 
     # construct url and open webpage
     tab_names = []
+    wallet_names = []
     for address in addr_dict:
         chrome_driver.execute_script(f"window.open('https://debank.com/profile/{address}/history')")
         tab_names.append(chrome_driver.window_handles[-1])
+        wallet_names.append(address_dict[address]['name'])
 
-    args = [(tab, no_txns) for tab in tab_names]
+    args = [(tab, wallet, no_txns) for tab, wallet in zip(tab_names, wallet_names)]
 
     with Pool(os.cpu_count()) as pool:
         batch = pool.starmap(get_last_txns, args)
