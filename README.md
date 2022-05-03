@@ -44,7 +44,7 @@ CHAT_ID=<the-id-of-your-telegram-chat>
 ```
 cd CryptoWallets
 ```
-Create a **wallets.json** file with addresses of the following structure, where **name** is the name of the address to screened, **chat_id** is the Telegram chat to send transactions to of this specific address:
+Create a **wallets.json** file with addresses of the following structure, where **name** is the name of the address to be screened, **chat_id** is the Telegram chat to send transactions to of this specific address:
 
 ```
 {
@@ -66,10 +66,18 @@ Save the contents of the **wallets.json** file in a variable:
 ```
 var="$(cat wallets.json)"
 ```
-Now you can run the script by passing addresses to be screened to **main.py**:
+To start screening addresses in a multiprocessing mode by passing addresses to **main.py**:
 ```
-python main.py "$var"
+python main.py -m "$var"
 ```
+To start screening addresses in a subprocessing mode by passing addresses to **main.py**:
+```
+python main.py -s "$var"
+```
+**Difference between subprocessing and multiprocessing:**
+<br>
+Subprocessing runs a separate Python program for each address in the list and it is completely separated from the rest.
+Multiprocessing runs in the same script but with different processes concurently within. This means that processes are not completely isolated and if, for example, DeBank does not return any response to one address the whole script will get stucked. 
 
 <br/>
 
@@ -83,8 +91,7 @@ docker build . -t wallet-scrape
 ```
 Run docker container:
 ```
-var="$(cat wallets.json)"
-docker run --shm-size=2g -it <image-id> python3 main.py "$var"  
+docker run --shm-size=2g -it <image-id> python3 <mode> main.py "$var"  
 ```
 
 where **--shm-size=2g** docker argument is provided to prevent Chromium from the **"from tab crashed"** error.
