@@ -1,4 +1,4 @@
-#!/Users/ivankyulev/Projects/CryptoWallets/bin/python3
+#!/Users/ivankyulev/Projects/CryptoWallets/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
