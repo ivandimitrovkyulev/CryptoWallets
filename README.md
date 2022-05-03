@@ -91,7 +91,7 @@ docker build . -t wallet-scrape
 ```
 Run docker container:
 ```
-docker run --shm-size=2g -it <image-id> python3 <mode> main.py "$var"  
+docker run --shm-size=2g -it <image-id> python3 main.py <mode> "$var"  
 ```
 
 where **--shm-size=2g** docker argument is provided to prevent Chromium from the **"from tab crashed"** error.
