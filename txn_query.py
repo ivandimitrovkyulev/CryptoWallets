@@ -2,8 +2,8 @@ import json
 import os
 
 from multiprocessing.dummy import Pool
-from common.driver import chrome_driver
-from common.scrape import get_last_txns
+from src.common.driver import chrome_driver
+from src.multi_process.scrape import get_last_txns
 
 
 def print_last_txns(

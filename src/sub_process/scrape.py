@@ -3,8 +3,6 @@ import os
 from subprocess import Popen
 from multiprocessing.dummy import Pool
 
-from single_scrape import file_name
-
 
 def scrape_wallets_subprocess(
         address_dict: dict,
@@ -15,9 +13,10 @@ def scrape_wallets_subprocess(
     :param address_dict: Dictionary of addresses where keys are '0x63dhf6...9vs5' values
     :return: None
     """
+    program_name = "src.sub_process.single_scrape"
 
     # construct arguments and open webpages
-    args = [["python3", f"{file_name}", f"{address}", f"{address_dict[address]}"]
+    args = [["python3", "-m", f"{program_name}", f"{address}", f"{address_dict[address]}"]
             for address in address_dict]
 
     with Pool(os.cpu_count()) as pool:
