@@ -1,11 +1,8 @@
 import os
-from lxml import html
 from time import sleep
+from lxml import html
+from multiprocessing.dummy import Pool, Lock
 
-from multiprocessing.dummy import (
-    Pool,
-    Lock,
-)
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
@@ -13,14 +10,14 @@ from selenium.common.exceptions import (
     WebDriverException,
     TimeoutException
 )
-
-from common.message import send_message
-from common.driver import chrome_driver
-from common.logger import log_error
-from common.variables import (
-    sleep_time,
+from src.common.logger import log_error
+from src.common.format import dict_complement_b
+from src.common.message import send_message
+from src.common.driver import chrome_driver
+from src.common.variables import (
     request_wait_time,
     max_request_wait_time,
+    sleep_time,
 )
 
 
@@ -28,34 +25,15 @@ from common.variables import (
 lock = Lock()
 
 
-def dict_complement_b(
-        old_dict: dict,
-        new_dict: dict,
-) -> dict:
-    """
-    Compares dictionary A & B and returns the relative complement of A in B.
-    Basically returns all members in B that are not in A as a python dictionary -
-    as in Venn's diagrams.
-
-    :param old_dict: dictionary A
-    :param new_dict: dictionary B
-    :returns: Python Dictionary
-    """
-
-    b_complement = {k: new_dict[k] for k in new_dict if k not in old_dict}
-
-    return b_complement
-
-
 def refresh_tab(
-        tab: str,
+        tab_name: str,
         wallet_name: str,
         wait_time: int = request_wait_time,
 ) -> None:
     """
     Refreshes a tab given it's tab name
 
-    :param tab: Name of driver tab
+    :param tab_name: Name of driver tab
     :param wallet_name: Name of wallet to scrape
     :param wait_time: Maximum number of seconds to wait for tab refresh
     :returns: None
@@ -63,7 +41,7 @@ def refresh_tab(
     lock.acquire()
 
     # Switch to window and refresh tab
-    chrome_driver.switch_to.window(tab)
+    chrome_driver.switch_to.window(tab_name)
     chrome_driver.execute_script("document.location.reload()")
 
     while True:
@@ -109,10 +87,11 @@ def get_last_txns(
             # Refresh page and log error
             chrome_driver.execute_script("document.location.reload()")
             log_error.warning(f"Error while trying to load transactions for {wallet_name}")
-            wait_time += 1
+            wait_time += 5
         else:
             break
 
+        # Wait for longer periods
         if wait_time >= max_request_wait_time:
             wait_time = request_wait_time
 
@@ -142,15 +121,13 @@ def get_last_txns(
     return transactions
 
 
-def scrape_multiple_wallets(
+def scrape_wallets_multiprocess(
         address_dict: dict,
-        time_to_sleep: int = sleep_time,
 ) -> None:
     """
     Constantly scrapes multiple addresses and sends a Telegram message if new transaction is detected.
 
     :param address_dict: Dictionary of addresses where keys are '0x63dhf6...9vs5' values
-    :param time_to_sleep: Time to sleep between queries
     :return: None
     """
 
@@ -173,7 +150,7 @@ def scrape_multiple_wallets(
             old_txns = pool.starmap(get_last_txns, args_old)
 
             # Sleep and refresh tabs
-            sleep(time_to_sleep)
+            sleep(sleep_time)
             pool.starmap(refresh_tab, args_refresh)
 
             # Get latest transactions

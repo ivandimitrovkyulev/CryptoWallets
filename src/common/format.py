@@ -1,17 +1,38 @@
 import re
 from typing import Optional
+
 from datetime import (
     datetime,
     timedelta,
 )
-from common.logger import (
+from src.common.logger import (
     log_spam,
     log_error,
+    log_fail,
 )
-from common.variables import (
+from src.common.variables import (
     time_format,
     ignore_list,
 )
+
+
+def dict_complement_b(
+        old_dict: dict,
+        new_dict: dict,
+) -> dict:
+    """
+    Compares dictionary A & B and returns the relative complement of A in B.
+    Basically returns all members in B that are not in A as a python dictionary -
+    as in Venn's diagrams.
+
+    :param old_dict: dictionary A
+    :param new_dict: dictionary B
+    :returns: Python Dictionary
+    """
+
+    b_complement = {k: new_dict[k] for k in new_dict if k not in old_dict}
+
+    return b_complement
 
 
 def format_data(
@@ -44,6 +65,7 @@ def format_data(
 
     # If txn failed return none
     if 'Failed' in txn[0]:
+        log_fail.info(f"{txn}")
         return
 
     # If txn from unwanted address return none

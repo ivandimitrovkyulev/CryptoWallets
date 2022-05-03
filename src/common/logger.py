@@ -1,6 +1,6 @@
 import logging
 
-from common.variables import log_format
+from src.common.variables import log_format
 
 
 def logger_setup(
@@ -31,5 +31,6 @@ def logger_setup(
 
 
 # Configure logging settings
-log_error = logger_setup("error", f"error.log")
-log_spam = logger_setup("spam", f"spam.log")
+log_error = logger_setup("error", "error.log")
+log_spam = logger_setup("spam", "spam.log")
+log_fail = logger_setup("fail", "fail.log")

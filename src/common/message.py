@@ -6,8 +6,8 @@ from requests import (
     Response
 )
 
-from common.format import format_data
-from common.variables import (
+from src.common.format import format_data
+from src.common.variables import (
     TOKEN,
     CHAT_ID,
     time_format,

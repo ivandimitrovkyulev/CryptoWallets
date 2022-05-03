@@ -1,5 +1,6 @@
 """
-Main script that screens specified blockchain wallets and notifies when a new transaction occurs.
+Script that screens specified blockchain wallets and notifies when a new transaction occurs.
+Creates a subprocess with Popen for each wallet address to scrape.
 To run:
 var="$(cat wallets.json)"
 python3 main.py "$var"
@@ -10,9 +11,9 @@ import json
 from atexit import register
 from datetime import datetime
 
-from common.scrape import scrape_multiple_wallets
-from common.exceptions import exit_handler
-from common.variables import time_format
+from src.common.exceptions import exit_handler
+from src.common.variables import time_format
+from scrape import scrape_wallets_subprocess
 
 
 timestamp = datetime.now().astimezone().strftime(time_format)
@@ -21,10 +22,12 @@ program_name = os.path.basename(__file__)
 # Register function to be executed when script terminates
 register(exit_handler, program_name)
 
+
 if len(sys.argv) < 2:
     print("Please provide a string of addresses as an argument to process.\n"
           "For example, given a 'wallets.json' file, provide var, where var='$(cat wallets.json)'")
     sys.exit()
+
 elif len(sys.argv) == 2:
     # Read input string and convert it to a dictionary
     address_dict = json.loads(sys.argv[-1])
@@ -35,10 +38,13 @@ elif len(sys.argv) == 2:
         wallet_name = address_dict[address]['name']
         addresses += f"{index + 1}. {address}, {wallet_name}\n"
 
-    print(f"{timestamp}\nStarted screening the following addresses: \n{addresses}")
+    print(f"{timestamp} - {program_name}\n"
+          f"Started screening the following addresses:\n"
+          f"{addresses}")
 
     # Infinite scraping. Keyboard interrupt to stop.
-    scrape_multiple_wallets(address_dict)
+    scrape_wallets_subprocess(address_dict)
+
 else:
     print("Please provide only one argument of type string.")
     sys.exit()
