@@ -131,3 +131,6 @@ dmypy.json
 # MacOS folders
 .DS_Store
 .idea/
+
+# Log files
+*.log
