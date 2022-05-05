@@ -14,16 +14,16 @@ from src.common.logger import log_error
 
 def wait_history_table(
         driver: Chrome,
-        element: str,
+        element_name: str,
         wallet_name: str,
         wait_time: int = 30,
         max_wait_time: int = 50,
 ) -> None:
     """
-    Waits for the presence of a HTML element located by its name.
+    Waits infinitely for the presence of a HTML element located by its name.
 
     :param driver: Web driver instance
-    :param element: Element name to search for
+    :param element_name: Element name to search for
     :param wallet_name: Name of wallet to include into logger
     :param wait_time: Seconds to wait before refreshing
     :param max_wait_time: Max seconds to wait before refreshing
@@ -33,7 +33,7 @@ def wait_history_table(
     while True:
         try:
             WebDriverWait(driver, wait_time).until(ec.presence_of_element_located(
-                (By.CLASS_NAME, element)))
+                (By.CLASS_NAME, element_name)))
 
         except WebDriverException or TimeoutException:
             # Refresh page and log error

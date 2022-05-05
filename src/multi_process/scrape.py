@@ -1,9 +1,12 @@
 import os
 from time import sleep
 from lxml import html
-from multiprocessing.dummy import Pool, Lock
 
 from selenium.webdriver import Chrome
+from multiprocessing.dummy import (
+    Pool,
+    Lock,
+)
 
 from src.common.format import dict_complement_b
 from src.common.message import send_message
