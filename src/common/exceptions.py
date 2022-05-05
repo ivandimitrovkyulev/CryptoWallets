@@ -6,11 +6,11 @@ from typing import (
     Callable,
     TypeVar,
 )
+from selenium.webdriver import Chrome
 from selenium.common.exceptions import (
     WebDriverException,
     TimeoutException,
 )
-from src.common.driver import chrome_driver
 from src.common.message import telegram_send_message
 from src.common.variables import time_format
 
@@ -22,10 +22,13 @@ Function = TypeVar("Function")
 def driver_wait_exception_handler(
         wait_time: int = 10,
 ) -> Callable[[Function], Function]:
-    """ Decorator that infinitely re-tries to query website for information until
+    """
+    Decorator that infinitely re-tries to query website for information until
     the website responds. Useful when websites enforce a query limit.
 
-    :param wait_time: Seconds to wait until refreshes pages and tries again"""
+    :param wait_time: Seconds to wait until refreshes pages and tries again
+    :returns: Decorated function
+    """
 
     def decorator(func):
 
@@ -52,6 +55,7 @@ def driver_wait_exception_handler(
 
 
 def exit_handler(
+        driver: Chrome,
         program_name: str = "",
         telegram_chat_id: str = "",
         info: str = "",
@@ -59,6 +63,7 @@ def exit_handler(
     """
     Sends a notification message in Telegram to notify of program termination.
 
+    :param driver: Web driver instance
     :param program_name: Name of running program
     :param telegram_chat_id: Telegram Chat ID to send message to
     :param info: Additional info to include in debug message
@@ -73,9 +78,9 @@ def exit_handler(
               f"{info}"
 
     # Send debug message in Telegram and print in terminal
-    telegram_send_message(message, telegram_chat_id=telegram_chat_id)
+    telegram_send_message(message, telegram_chat_id=telegram_chat_id, debug=True)
 
     print(message)
 
     # Quit chrome driver
-    chrome_driver.quit()
+    driver.quit()

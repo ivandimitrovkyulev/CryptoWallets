@@ -9,7 +9,8 @@ from requests import (
 from src.common.format import format_data
 from src.common.variables import (
     TOKEN,
-    CHAT_ID,
+    CHAT_ID_ALERTS,
+    CHAT_ID_DEBUG,
     time_format,
 )
 
@@ -19,6 +20,7 @@ def telegram_send_message(
         disable_web_page_preview: bool = True,
         telegram_token: Optional[str] = "",
         telegram_chat_id: Optional[str] = "",
+        debug: bool = False,
 ) -> Response:
     """
     Sends a Telegram message to a specified chat.
@@ -31,7 +33,8 @@ def telegram_send_message(
     :param message_text: Text to be sent to the chat
     :param disable_web_page_preview: Set web preview on/off
     :param telegram_token: Telegram TOKEN API, default take from .env
-    :param telegram_chat_id: Telegram chat ID, default take from .env
+    :param telegram_chat_id: Telegram chat ID for alerts, default is 'CHAT_ID_ALERTS' from .env file
+    :param debug: If true sends message to Telegram chat with 'CHAT_ID_DEBUG' from .env file
     :return: requests.Response
     """
 
@@ -40,10 +43,13 @@ def telegram_send_message(
     if telegram_token == "":
         telegram_token = TOKEN
 
-    # if chat_id not provided - try CHAT_ID variable from the .env file
+    # if chat_id not provided - try CHAT_ID_ALERTS variable from the .env file
     telegram_chat_id = str(telegram_chat_id)
-    if telegram_chat_id == "" or telegram_chat_id is None or telegram_chat_id.lower() == "none":
-        telegram_chat_id = CHAT_ID
+    if (telegram_chat_id == "" or telegram_chat_id is None) and debug is False:
+        telegram_chat_id = CHAT_ID_ALERTS
+    # if chat_id not provided and debug is True - try CHAT_ID_ALERTS variable from the .env file
+    elif telegram_chat_id == "" and debug is True:
+        telegram_chat_id = CHAT_ID_DEBUG
 
     # construct url using token for a sendMessage POST request
     url = "https://api.telegram.org/bot{}/sendMessage".format(telegram_token)

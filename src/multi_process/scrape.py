@@ -13,7 +13,7 @@ from selenium.common.exceptions import (
 from src.common.logger import log_error
 from src.common.format import dict_complement_b
 from src.common.message import send_message
-from src.common.driver import chrome_driver
+from src.common.driver.driver import chrome_driver
 from src.common.variables import (
     request_wait_time,
     max_request_wait_time,
@@ -88,12 +88,12 @@ def get_last_txns(
             chrome_driver.execute_script("document.location.reload()")
             log_error.warning(f"Error while trying to load transactions for {wallet_name}")
             wait_time += 5
+
+            # Wait for longer periods
+            if wait_time >= max_request_wait_time:
+                wait_time = request_wait_time
         else:
             break
-
-        # Wait for longer periods
-        if wait_time >= max_request_wait_time:
-            wait_time = request_wait_time
 
     root = html.fromstring(chrome_driver.page_source)
     table = root.find_class("History_table__9zhFG")[0]

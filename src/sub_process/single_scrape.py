@@ -1,172 +1,160 @@
-import os
-import sys
-import ast
-
 from lxml import html
 from time import sleep
-from dotenv import load_dotenv
-from atexit import register
 
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver import Chrome
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as ec
-from selenium.common.exceptions import (
-    WebDriverException,
-    TimeoutException
-)
-
-from src.common.exceptions import exit_handler
-from src.common.logger import log_error
 from src.common.message import send_message
 from src.common.format import dict_complement_b
-
-from src.common.variables import (
-    request_wait_time,
-    sleep_time,
+from src.common.driver.driver import chrome_driver
+from src.common.page import (
+    scrape_table,
+    wait_history_table,
 )
-
-
-if len(sys.argv) != 3:
-    sys.exit("Please provide 2 arguments: [Address] & [address info dictionary].")
-
-address = sys.argv[1]
-
-address_dict = ast.literal_eval(sys.argv[2])
-name = address_dict['name']
-chat = address_dict['chat_id']
-
-
-# Register function to be executed when script terminates
-program_name = f"{os.path.basename(__file__)} - {name} wallet"
-register(exit_handler, program_name)
-
-load_dotenv()
-# Get env variables
-CHROME_LOCATION = os.getenv('CHROME_LOCATION')
-
-# Chrome driver options
-options = Options()
-options.add_argument('--headless')
-options.add_argument('--no-sandbox')
-options.add_argument('window-size=1400,2100')
-options.add_argument('--disable-gpu')
-options.add_argument('--disable-dev-shm-usage')
-
-# Open chrome web driver
-chrome_driver = Chrome(service=Service(CHROME_LOCATION), options=options)
-chrome_driver.get(f"https://debank.com/profile/{address}/history")
+from src.common.variables import (
+    table_element_name,
+    table_element_id,
+)
 
 
 def refresh_tab(
+        element_name: str,
         wallet_name: str,
-        wait_time: int = request_wait_time,
+        wait_time: int = 30,
+        max_wait_time: int = 50,
 ) -> None:
     """
-    Refreshes a tab given it's tab name
+    Refreshes driver's current page.
 
-    :param wallet_name: Name of wallet to scrape
-    :param wait_time: Maximum number of seconds to wait for tab refresh
+    :param element_name: Element name wait for
+    :param wallet_name: Name of browser being scraped
+    :param wait_time: Seconds to wait before refreshing
+    :param max_wait_time: Max seconds to wait before refreshing
     :returns: None
     """
 
     # Refresh tab
-    chrome_driver.execute_script("document.location.reload()")
+    chrome_driver.refresh()
 
-    while True:
-        try:
-            WebDriverWait(chrome_driver, wait_time).until(ec.presence_of_element_located(
-                (By.CLASS_NAME, "History_tableLine__3dtlF")))
-        except WebDriverException or TimeoutException:
-            # Refresh page and log error
-            chrome_driver.execute_script("document.location.reload()")
-            log_error.warning(f"Error while refreshing tab for {wallet_name}")
-        else:
-            break
+    # Wait for website to respond with History Table
+    wait_history_table(element_name, wallet_name, wait_time, max_wait_time)
 
 
 def get_last_txns(
+        element_name: str,
+        element_id: str,
         wallet_name: str,
         no_of_txns: int = 100,
-        wait_time: int = request_wait_time,
+        wait_time: int = 30,
+        max_wait_time: int = 50,
 ) -> dict:
     """
-    Searches DeBank for Transaction history for an address and returns latest transactions.
+    Searches DeBank for an Address Transaction history and returns its latest transactions.
 
+    :param element_name: Element name wait for
+    :param element_id: Element ID to scrape
     :param wallet_name: Name of wallet to scrape
-    :param no_of_txns: Number of latest transactions to return
-    :param wait_time: No. of secs to wait for web response
-    :return: Python Dictionary with  transactions
+    :param no_of_txns: Number of transactions to return, up to 100
+    :param wait_time: Seconds to wait before refreshing
+    :param max_wait_time: Max seconds to wait before refreshing
+    :returns: Python Dictionary with  transactions
     """
 
-    # Wait for website to respond, if driver error raised re-try until resolved
-    while True:
-        try:
-            WebDriverWait(chrome_driver, wait_time).until(ec.presence_of_element_located(
-                (By.CLASS_NAME, "History_tableLine__3dtlF")))
-        except WebDriverException or TimeoutException:
-            # Refresh page and log error
-            chrome_driver.execute_script("document.location.reload()")
-            log_error.warning(f"Error while trying to load transactions for {wallet_name}")
-            wait_time += 5
-        else:
-            break
+    # Wait for website to respond with History Table
+    wait_history_table(element_name, wallet_name, wait_time, max_wait_time)
 
     root = html.fromstring(chrome_driver.page_source)
-    table = root.find_class("History_table__9zhFG")[0]
+    table = root.find_class(element_id)[0]
 
-    transactions = {}
-    for index, row in enumerate(table.xpath('./div')):
-        # If limit reached, break
-        if index >= int(no_of_txns):
-            break
-
-        # Get link to transaction
-        link = row.xpath('./div/div/a/@href')[0]
-
-        txn_list = []
-        for col in row.xpath('./div'):
-            # Get text for Txn, Type, Amount, Gas fee
-            info = col.xpath('.//text()')
-            txn_list.append(info)
-
-        if len(txn_list) >= 4:
-            transactions[link] = txn_list
-
-    return transactions
+    # Return table as a Python Dictionary
+    return scrape_table(table, no_of_txns)
 
 
 def scrape_single_wallet(
+        element_name: str,
+        element_id: str,
         wallet_name: str,
         chat_id: str,
-        time_to_sleep: int = sleep_time,
+        time_to_sleep: int = 30,
+        wait_time: int = 30,
+        max_wait_time: int = 50,
 ):
     """
-    Scrapes a single wallet address.
+    Scrapes a single wallet address until terminated.
 
+    :param element_name: Element name wait for
+    :param element_id: Element ID to scrape
     :param wallet_name: Name of wallet
     :param chat_id: Telegram chat ID to send messages to
     :param time_to_sleep: Time to sleep between queries
+    :param wait_time: Seconds to wait before refreshing
+    :param max_wait_time: Max seconds to wait before refreshing
     :returns: None
     """
 
     while True:
         # Get latest transactions
-        old_txns = get_last_txns(wallet_name, 100)
+        old_txns = get_last_txns(element_name=element_name,
+                                 element_id=element_id,
+                                 wallet_name=wallet_name,
+                                 no_of_txns=100,
+                                 wait_time=wait_time,
+                                 max_wait_time=max_wait_time)
 
         # Sleep and refresh tab
         sleep(time_to_sleep)
-        refresh_tab(wallet_name)
+        refresh_tab(element_name=element_name,
+                    wallet_name=wallet_name,
+                    wait_time=wait_time,
+                    max_wait_time=max_wait_time)
 
         # Get latest transactions
-        new_txns = get_last_txns(wallet_name, 50)
+        new_txns = get_last_txns(element_name=element_name,
+                                 element_id=element_id,
+                                 wallet_name=wallet_name,
+                                 no_of_txns=50,
+                                 wait_time=wait_time,
+                                 max_wait_time=max_wait_time)
 
         # If any new txns -> send Telegram message
         found_txns = dict_complement_b(old_txns, new_txns)
-        send_message(found_txns, wallet_name, chat_id)
+        send_message(found_txns=found_txns,
+                     wallet_name=wallet_name,
+                     chat_id=chat_id)
 
 
-# Start screening single wallet address
-scrape_single_wallet(name, chat)
+if __name__ == "__main__":
+
+    import os
+    import sys
+    import ast
+
+    from atexit import register
+
+    from src.common.exceptions import exit_handler
+    from src.common.variables import (
+        request_wait_time,
+        max_request_wait_time,
+        sleep_time,
+    )
+
+    if len(sys.argv) != 3:
+        sys.exit("Please provide 2 arguments: [Address] & [Address Info dictionary].")
+
+    address = sys.argv[1]
+    address_dict = ast.literal_eval(sys.argv[2])
+    name = address_dict['name']
+    chat = address_dict['chat_id']
+
+    # Register function to be executed when script terminates
+    program_name = f"{os.path.basename(__file__)} - {name} wallet"
+    register(exit_handler, program_name)
+
+    # Get page to scrape
+    chrome_driver.get(f"https://debank.com/profile/{address}/history")
+
+    # Start screening single wallet address
+    scrape_single_wallet(element_name=table_element_name,
+                         element_id=table_element_id,
+                         wallet_name=name,
+                         chat_id=chat,
+                         time_to_sleep=sleep_time,
+                         wait_time=request_wait_time,
+                         max_wait_time=max_request_wait_time)
