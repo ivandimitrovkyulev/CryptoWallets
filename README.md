@@ -1,9 +1,11 @@
-# CryptoWallets v1.0.0
-Screener that follows specified blockchain wallets and notifies when a new transaction occurs.
+<h1>CryptoWallets</h1>
+<h3>version 1.0.0</h3>
 
+Screener that follows specified blockchain wallets and notifies when a new transaction occurs via Telegram message.
+
+<br> 
 
 ## Installation
-<br/>
 
 This project uses **Python 3.9.6** and requires a
 [Chromium WebDriver](https://chromedriver.chromium.org/getting-started/) installed.
@@ -34,16 +36,15 @@ CHROME_LOCATION=<your/web/driver/path/location>
 
 TOKEN=<telegram-token-for-your-bot>
 
-CHAT_ID=<the-id-of-your-telegram-chat>
+CHAT_ID_ALERTS=<id-of-telegram-chat-for-alerts>
+
+CHAT_ID_DEBUG=<id-of-telegram-chat-for-debugging>
 ```
 <br/>
 
 ## Running the script
 <br/>
 
-```
-cd CryptoWallets
-```
 Create a **wallets.json** file with addresses of the following structure, where **name** is the name of the address to be screened, **chat_id** is the Telegram chat to send transactions to of this specific address:
 
 ```
@@ -87,7 +88,7 @@ Multiprocessing runs in the same script but with different processes concurently
 Build a docker image named **wallet-scrape**:
 ```
 cd CryptoWallets
-docker build . -t wallet-scrape
+docker build . -t <image-name>
 ```
 Run docker container:
 ```

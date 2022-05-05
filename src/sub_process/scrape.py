@@ -13,6 +13,7 @@ def scrape_wallets_subprocess(
     :param address_dict: Dictionary of addresses where keys are '0x63dhf6...9vs5' values
     :return: None
     """
+
     program_name = "src.sub_process.single_scrape"
 
     # construct arguments and open webpages

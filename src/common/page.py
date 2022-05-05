@@ -1,5 +1,6 @@
 from lxml.html import HtmlElement
 
+from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
@@ -8,12 +9,11 @@ from selenium.common.exceptions import (
     TimeoutException
 )
 
-
 from src.common.logger import log_error
-from src.common.driver.driver import chrome_driver
 
 
 def wait_history_table(
+        driver: Chrome,
         element: str,
         wallet_name: str,
         wait_time: int = 30,
@@ -22,6 +22,7 @@ def wait_history_table(
     """
     Waits for the presence of a HTML element located by its name.
 
+    :param driver: Web driver instance
     :param element: Element name to search for
     :param wallet_name: Name of wallet to include into logger
     :param wait_time: Seconds to wait before refreshing
@@ -31,12 +32,12 @@ def wait_history_table(
 
     while True:
         try:
-            WebDriverWait(chrome_driver, wait_time).until(ec.presence_of_element_located(
+            WebDriverWait(driver, wait_time).until(ec.presence_of_element_located(
                 (By.CLASS_NAME, element)))
 
         except WebDriverException or TimeoutException:
             # Refresh page and log error
-            chrome_driver.refresh()
+            driver.refresh()
             log_error.warning(f"Error while trying to load transactions for {wallet_name}")
 
             # Wait for longer periods

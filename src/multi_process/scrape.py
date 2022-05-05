@@ -3,131 +3,109 @@ from time import sleep
 from lxml import html
 from multiprocessing.dummy import Pool, Lock
 
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as ec
-from selenium.common.exceptions import (
-    WebDriverException,
-    TimeoutException
-)
-from src.common.logger import log_error
+from selenium.webdriver import Chrome
+
 from src.common.format import dict_complement_b
 from src.common.message import send_message
-from src.common.driver.driver import chrome_driver
-from src.common.variables import (
-    request_wait_time,
-    max_request_wait_time,
-    sleep_time,
+from src.common.page import (
+    scrape_table,
+    wait_history_table,
 )
 
 
-# Setup threading lock
+# Setup Global interpreter lock (GIL)
 lock = Lock()
 
 
 def refresh_tab(
+        driver: Chrome,
         tab_name: str,
+        element_name: str,
         wallet_name: str,
-        wait_time: int = request_wait_time,
+        wait_time: int = 30,
+        max_wait_time: int = 50,
 ) -> None:
     """
     Refreshes a tab given it's tab name
 
-    :param tab_name: Name of driver tab
-    :param wallet_name: Name of wallet to scrape
-    :param wait_time: Maximum number of seconds to wait for tab refresh
+    :param driver: Web driver instance
+    :param tab_name: Chrome Tab to switch to
+    :param element_name: Element name to wait for
+    :param wallet_name: Name of browser being scraped
+    :param wait_time: Seconds to wait before refreshing
+    :param max_wait_time: Max seconds to wait before refreshing
     :returns: None
     """
     lock.acquire()
 
-    # Switch to window and refresh tab
-    chrome_driver.switch_to.window(tab_name)
-    chrome_driver.execute_script("document.location.reload()")
+    # Switch to window and Refresh tab
+    driver.switch_to.window(tab_name)
+    driver.refresh()
 
-    while True:
-        try:
-            WebDriverWait(chrome_driver, wait_time).until(ec.presence_of_element_located(
-                (By.CLASS_NAME, "History_tableLine__3dtlF")))
-        except WebDriverException or TimeoutException:
-            # Refresh page and log error
-            chrome_driver.execute_script("document.location.reload()")
-            log_error.warning(f"Error while refreshing tab for {wallet_name}")
-        else:
-            break
+    # Wait for website to respond with History Table
+    wait_history_table(driver, element_name, wallet_name, wait_time, max_wait_time)
 
     lock.release()
 
 
 def get_last_txns(
+        driver: Chrome,
         tab_name: str,
+        element_name: str,
+        element_id: str,
         wallet_name: str,
         no_of_txns: int = 100,
-        wait_time: int = request_wait_time,
+        wait_time: int = 30,
+        max_wait_time: int = 50,
 ) -> dict:
     """
-    Searches DeBank for Transaction history for an address and returns latest transactions.
+    Searches DeBank for an Address Transaction history and returns its latest transactions.
 
+    :param driver: Web driver instance
     :param tab_name: Chrome Tab to switch to
+    :param element_name: Element name wait for
+    :param element_id: Element ID to scrape
     :param wallet_name: Name of wallet to scrape
-    :param no_of_txns: Number of latest transactions to return
-    :param wait_time: No. of secs to wait for web response
-    :return: Python Dictionary with  transactions
+    :param no_of_txns: Number of transactions to return, up to 100
+    :param wait_time: Seconds to wait before refreshing
+    :param max_wait_time: Max seconds to wait before refreshing
+    :returns: Python Dictionary with  transactions
     """
-
     lock.acquire()
 
-    chrome_driver.switch_to.window(tab_name)
+    driver.switch_to.window(tab_name)
 
-    # Wait for website to respond, if driver error raised re-try until resolved
-    while True:
-        try:
-            WebDriverWait(chrome_driver, wait_time).until(ec.presence_of_element_located(
-                (By.CLASS_NAME, "History_tableLine__3dtlF")))
-        except WebDriverException or TimeoutException:
-            # Refresh page and log error
-            chrome_driver.execute_script("document.location.reload()")
-            log_error.warning(f"Error while trying to load transactions for {wallet_name}")
-            wait_time += 5
+    # Wait for website to respond with History Table
+    wait_history_table(driver, element_name, wallet_name, wait_time, max_wait_time)
 
-            # Wait for longer periods
-            if wait_time >= max_request_wait_time:
-                wait_time = request_wait_time
-        else:
-            break
-
-    root = html.fromstring(chrome_driver.page_source)
-    table = root.find_class("History_table__9zhFG")[0]
+    root = html.fromstring(driver.page_source)
+    table = root.find_class(element_id)[0]
 
     lock.release()
 
-    transactions = {}
-    for index, row in enumerate(table.xpath('./div')):
-        # If limit reached, break
-        if index >= int(no_of_txns):
-            break
-
-        # Get link to transaction
-        link = row.xpath('./div/div/a/@href')[0]
-
-        txn_list = []
-        for col in row.xpath('./div'):
-            # Get text for Txn, Type, Amount, Gas fee
-            info = col.xpath('.//text()')
-            txn_list.append(info)
-
-        if len(txn_list) >= 4:
-            transactions[link] = txn_list
-
-    return transactions
+    # Return table as a Python Dictionary
+    return scrape_table(table, no_of_txns)
 
 
 def scrape_wallets_multiprocess(
+        driver: Chrome,
         address_dict: dict,
+        element_name: str,
+        element_id: str,
+        time_to_sleep: int = 30,
+        wait_time: int = 30,
+        max_wait_time: int = 50,
 ) -> None:
     """
     Constantly scrapes multiple addresses and sends a Telegram message if new transaction is detected.
 
+    :param driver: Web driver instance
     :param address_dict: Dictionary of addresses where keys are '0x63dhf6...9vs5' values
+    :param element_name: Element name to wait for in HTML page
+    :param element_id: Element ID to scrape from HTML page
+    :param time_to_sleep: Time to sleep between queries
+    :param wait_time: Seconds to wait before refreshing
+    :param max_wait_time: Max seconds to wait before refreshing
     :return: None
     """
 
@@ -135,26 +113,29 @@ def scrape_wallets_multiprocess(
     tab_names = []
     wallet_names = []
     for address in address_dict:
-        chrome_driver.execute_script(f"window.open('https://debank.com/profile/{address}/history')")
-        tab_names.append(chrome_driver.window_handles[-1])
+        driver.execute_script(f"window.open('https://debank.com/profile/{address}/history')")
+        tab_names.append(driver.window_handles[-1])
         wallet_names.append(address_dict[address]['name'])
 
-    args_old = [(tab, wallet, 100) for tab, wallet in zip(tab_names, wallet_names)]
-    args_new = [(tab, wallet, 50) for tab, wallet in zip(tab_names, wallet_names)]
-    args_refresh = [(tab, wallet) for tab, wallet in zip(tab_names, wallet_names)]
+    args_old_txn = [(driver, tab, element_name, element_id, wallet, 100, wait_time, max_wait_time)
+                    for tab, wallet in zip(tab_names, wallet_names)]
+    args_new_txn = [(driver, tab, element_name, element_id, wallet, 50, wait_time, max_wait_time)
+                    for tab, wallet in zip(tab_names, wallet_names)]
+    args_refresh = [(driver, tab, element_name, wallet, wait_time, max_wait_time)
+                    for tab, wallet in zip(tab_names, wallet_names)]
 
     while True:
 
         with Pool(os.cpu_count()) as pool:
             # Get latest transactions
-            old_txns = pool.starmap(get_last_txns, args_old)
+            old_txns = pool.starmap(get_last_txns, args_old_txn)
 
             # Sleep and refresh tabs
-            sleep(sleep_time)
+            sleep(time_to_sleep)
             pool.starmap(refresh_tab, args_refresh)
 
             # Get latest transactions
-            new_txns = pool.starmap(get_last_txns, args_new)
+            new_txns = pool.starmap(get_last_txns, args_new_txn)
 
         # Send Telegram message if txns found
         for address, old_txn, new_txn in zip(address_dict, old_txns, new_txns):
