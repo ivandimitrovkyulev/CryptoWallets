@@ -99,6 +99,13 @@ docker run --shm-size="2g" -it <image-id> python3 main.py <mode> "$var"
 
 where **--shm-size="2g"** docker argument is provided to prevent Chromium from the **"from tab crashed"** error.
 
+<br>
+
+Or to run an individual container for a single address:
+```
+docker run --shm-size="2g" -it <image-id> python3 -m src.individual.scrape <address> <name>
+```
+
 <br/>
 <br/>
 
