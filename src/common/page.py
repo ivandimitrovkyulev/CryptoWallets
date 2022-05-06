@@ -18,6 +18,7 @@ def wait_history_table(
         wallet_name: str,
         wait_time: int = 30,
         max_wait_time: int = 50,
+        infinite: bool = False,
 ) -> None:
     """
     Waits infinitely for the presence of a HTML element located by its name.
@@ -27,6 +28,7 @@ def wait_history_table(
     :param wallet_name: Name of wallet to include into logger
     :param wait_time: Seconds to wait before refreshing
     :param max_wait_time: Max seconds to wait before refreshing
+    :param infinite: If True re-tries infinitely to retrieve response, default False
     :returns: None
     """
 
@@ -40,10 +42,17 @@ def wait_history_table(
             driver.refresh()
             log_error.warning(f"Error while trying to load transactions for {wallet_name}")
 
-            # Wait for longer periods
-            wait_time += 5
+            # If query infinitely continue loop
+            if infinite:
+                continue
+
+            # If no response is returned break
             if wait_time >= max_wait_time:
-                wait_time = max_wait_time
+                # wait_time = max_wait_time
+                break
+
+            # Wait for longer periods
+            wait_time += 10
 
         # If response returned - break
         else:

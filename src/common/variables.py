@@ -24,10 +24,10 @@ table_element_id = "History_table__9zhFG"
 sleep_time = 180
 
 # Time to wait for page to respond
-request_wait_time = 30
+request_wait_time = 20
 
 # Max time to wait for page to respond
-max_request_wait_time = 50
+max_request_wait_time = 30
 
 # List of strings to ignore if contained in the transaction info
 ignore_list = (

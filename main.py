@@ -83,4 +83,5 @@ elif args.multi:
                                 element_id=table_element_id,
                                 time_to_sleep=sleep_time,
                                 wait_time=request_wait_time,
-                                max_wait_time=max_request_wait_time)
+                                max_wait_time=max_request_wait_time,
+                                infinite=False)

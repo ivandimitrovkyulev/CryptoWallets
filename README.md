@@ -92,10 +92,12 @@ docker build . -t <image-name>
 ```
 Run docker container:
 ```
-docker run --shm-size=2g -it <image-id> python3 main.py <mode> "$var"  
+var="$(cat wallets.json)"
+
+docker run --shm-size="2g" -it <image-id> python3 main.py <mode> "$var"  
 ```
 
-where **--shm-size=2g** docker argument is provided to prevent Chromium from the **"from tab crashed"** error.
+where **--shm-size="2g"** docker argument is provided to prevent Chromium from the **"from tab crashed"** error.
 
 <br/>
 <br/>

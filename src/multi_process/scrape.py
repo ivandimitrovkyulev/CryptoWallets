@@ -27,16 +27,18 @@ def refresh_tab(
         wallet_name: str,
         wait_time: int = 30,
         max_wait_time: int = 50,
+        infinite: bool = False,
 ) -> None:
     """
     Refreshes a tab given it's tab name
 
     :param driver: Web driver instance
     :param tab_name: Chrome Tab to switch to
-    :param element_name: Element name to wait for
+    :param element_name: Element name to search for
     :param wallet_name: Name of browser being scraped
     :param wait_time: Seconds to wait before refreshing
     :param max_wait_time: Max seconds to wait before refreshing
+    :param infinite: If True re-tries infinitely to retrieve response, default False
     :returns: None
     """
     lock.acquire()
@@ -46,7 +48,7 @@ def refresh_tab(
     driver.refresh()
 
     # Wait for website to respond with History Table
-    wait_history_table(driver, element_name, wallet_name, wait_time, max_wait_time)
+    wait_history_table(driver, element_name, wallet_name, wait_time, max_wait_time, infinite)
 
     lock.release()
 
@@ -60,18 +62,20 @@ def get_last_txns(
         no_of_txns: int = 100,
         wait_time: int = 30,
         max_wait_time: int = 50,
+        infinite: bool = False,
 ) -> dict:
     """
     Searches DeBank for an Address Transaction history and returns its latest transactions.
 
     :param driver: Web driver instance
     :param tab_name: Chrome Tab to switch to
-    :param element_name: Element name wait for
+    :param element_name: Element name to search for
     :param element_id: Element ID to scrape
     :param wallet_name: Name of wallet to scrape
     :param no_of_txns: Number of transactions to return, up to 100
     :param wait_time: Seconds to wait before refreshing
     :param max_wait_time: Max seconds to wait before refreshing
+    :param infinite: If True re-tries infinitely to retrieve response, default False
     :returns: Python Dictionary with  transactions
     """
     lock.acquire()
@@ -79,10 +83,14 @@ def get_last_txns(
     driver.switch_to.window(tab_name)
 
     # Wait for website to respond with History Table
-    wait_history_table(driver, element_name, wallet_name, wait_time, max_wait_time)
+    wait_history_table(driver, element_name, wallet_name, wait_time, max_wait_time, infinite)
 
-    root = html.fromstring(driver.page_source)
-    table = root.find_class(element_id)[0]
+    try:
+        root = html.fromstring(driver.page_source)
+        table = root.find_class(element_id)[0]
+
+    except IndexError:
+        return {}
 
     lock.release()
 
@@ -98,6 +106,7 @@ def scrape_wallets_multiprocess(
         time_to_sleep: int = 30,
         wait_time: int = 30,
         max_wait_time: int = 50,
+        infinite: bool = False,
 ) -> None:
     """
     Constantly scrapes multiple addresses and sends a Telegram message if new transaction is detected.
@@ -109,6 +118,7 @@ def scrape_wallets_multiprocess(
     :param time_to_sleep: Time to sleep between queries
     :param wait_time: Seconds to wait before refreshing
     :param max_wait_time: Max seconds to wait before refreshing
+    :param infinite: If True re-tries infinitely to retrieve response, default False
     :return: None
     """
 
@@ -120,11 +130,12 @@ def scrape_wallets_multiprocess(
         tab_names.append(driver.window_handles[-1])
         wallet_names.append(address_dict[address]['name'])
 
-    args_old_txn = [(driver, tab, element_name, element_id, wallet, 100, wait_time, max_wait_time)
+    args_old_txn = [(driver, tab, element_name, element_id, wallet, 100, wait_time, max_wait_time, infinite)
                     for tab, wallet in zip(tab_names, wallet_names)]
-    args_new_txn = [(driver, tab, element_name, element_id, wallet, 50, wait_time, max_wait_time)
+    args_new_txn = [(driver, tab, element_name, element_id, wallet, 50, wait_time, max_wait_time, infinite)
                     for tab, wallet in zip(tab_names, wallet_names)]
-    args_refresh = [(driver, tab, element_name, wallet, wait_time, max_wait_time)
+
+    args_refresh = [(driver, tab, element_name, wallet, wait_time, max_wait_time, infinite)
                     for tab, wallet in zip(tab_names, wallet_names)]
 
     while True:
