@@ -3,6 +3,8 @@ FROM python:3.9
 COPY src ./wallet-scrape/src
 COPY main.py ./wallet-scrape
 COPY txn_query.py ./wallet-scrape
+COPY run_containers.py ./wallet-scrape
+
 COPY .env ./wallet-scrape
 COPY requirements.txt ./wallet-scrape
 COPY README.md ./wallet-scrape
