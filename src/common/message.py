@@ -1,16 +1,19 @@
+from time import sleep
 from typing import Optional
 from datetime import datetime
 
+from requests.exceptions import ConnectionError
 from requests import (
     post,
-    Response
+    Response,
 )
-
+from src.common.logger import log_error
 from src.common.format import format_data
 from src.common.variables import (
     TOKEN,
     CHAT_ID_ALERTS,
     CHAT_ID_DEBUG,
+    CHAT_ID_SPECIAL,
     time_format,
 )
 
@@ -37,19 +40,19 @@ def telegram_send_message(
     :param debug: If true sends message to Telegram chat with 'CHAT_ID_DEBUG' from .env file
     :return: requests.Response
     """
+    telegram_token = str(telegram_token)
+    telegram_chat_id = str(telegram_chat_id)
 
     # if URL not provided - try TOKEN variable from the .env file
-    telegram_token = str(telegram_token)
     if telegram_token == "":
         telegram_token = TOKEN
 
-    # if chat_id not provided - try CHAT_ID_ALERTS variable from the .env file
-    telegram_chat_id = str(telegram_chat_id)
-    if (telegram_chat_id == "" or telegram_chat_id is None) and debug is False:
-        telegram_chat_id = CHAT_ID_ALERTS
-    # if chat_id not provided and debug is True - try CHAT_ID_ALERTS variable from the .env file
-    elif telegram_chat_id == "" and debug is True:
-        telegram_chat_id = CHAT_ID_DEBUG
+    # if chat_id not provided - try CHAT_ID_ALERTS or CHAT_ID_DEBUG variable from the .env file
+    if telegram_chat_id == "":
+        if debug:
+            telegram_chat_id = CHAT_ID_DEBUG
+        else:
+            telegram_chat_id = CHAT_ID_ALERTS
 
     # construct url using token for a sendMessage POST request
     url = "https://api.telegram.org/bot{}/sendMessage".format(telegram_token)
@@ -59,9 +62,15 @@ def telegram_send_message(
             "disable_web_page_preview": disable_web_page_preview}
 
     # send the POST request
-    post_request = post(url, data)
+    while True:
+        try:
+            post_request = post(url, data)
 
-    return post_request
+            return post_request
+
+        except ConnectionError as e:
+            log_error.warning(f"{e}")
+            sleep(3)
 
 
 def send_message(
@@ -81,11 +90,14 @@ def send_message(
     if len(found_txns) > 0:
         for txn in found_txns.keys():
             # Format dict value and filter out specific transactions
-            info = format_data(found_txns[txn])
+            data = format_data(found_txns[txn])
 
             # Do not send message if Txn does not meet criteria
-            if info is None:
+            if not data:
                 break
+
+            # Un-pack data
+            info, flag = data
 
             # Construct message string
             formatted_info = ""
@@ -99,6 +111,10 @@ def send_message(
 
             # Send Telegram message with found txns to specified chat
             telegram_send_message(message, telegram_chat_id=chat_id)
+
+            # Send Telegram message to a dedicated chat
+            if CHAT_ID_SPECIAL and flag != 'receive':
+                telegram_send_message(message, telegram_chat_id=CHAT_ID_SPECIAL)
 
             # Print result to terminal
             timestamp = datetime.now().astimezone().strftime(time_format)

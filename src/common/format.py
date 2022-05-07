@@ -39,19 +39,20 @@ def format_data(
         txn: list[list, list, list, list],
         time_diff_hours: int = 3,
         time_diff_mins: int = 0,
-) -> Optional[list]:
+) -> Optional[tuple[list, str]]:
     """
     Takes a list of lists with transaction data and returns formatted list of information.
 
     :param txn: List of lists containing txn data.
     :param time_diff_hours: Skips transactions that occurred more than specified hours ago.
     :param time_diff_mins: Skips transactions that occurred more than specified mins ago.
-    :return: List with formatted data or None if Txn does not meet criteria
+    :return: Optional Tuple of List with formatted data & transaction type flag
     """
     data = []
+    t_flag = 'normal'
 
-    # If txn does not have the right structure
-    if isinstance(txn, list) is False:
+    # If txn does not have the right structure log and return none---
+    if not isinstance(txn, list):
         log_error.critical(f"{txn} is not a list.")
         return
     elif len(txn) != 4:
@@ -59,28 +60,32 @@ def format_data(
         return
     else:
         for item in txn:
-            if isinstance(item, list) is False:
+            if not isinstance(item, list):
                 log_error.critical(f"{txn} is not a list of lists.")
                 return
 
-    # If txn failed return none
-    if 'Failed' in txn[0]:
+    # Un-pack data
+    t_date, t_type, t_swap, t_gas = txn
+
+    # Check against transaction type
+    if 'Failed' in t_date:
         log_fail.info(f"{txn}")
         return
-
-    # If txn from unwanted address return none
-    for item in txn[1]:
-        if item in ignore_list:
-            log_spam.info(f"{txn}")
-            return
-
-    # Log all Receive txns for analyses
-    if "Receive" in txn[1]:
+    elif 'Approve' in t_type:
         log_spam.info(f"{txn}")
+        return
+    elif 'Receive' in t_type:
+        log_spam.info(f"{txn}")
+        t_flag = 'receive'
+
+    # Check against unwanted transactions
+    for ignore in ignore_list:
+        if ignore in t_type or ignore in t_swap:
+            return
 
     # Format txn time
     try:
-        time = txn[0][0]
+        time = t_date[0]
         now = datetime.now()
 
         # Append timestamp
@@ -121,6 +126,7 @@ def format_data(
         if now - time_stamp > timedelta(hours=time_diff_hours, minutes=time_diff_mins):
             log_spam.info(f"{txn} time is old.")
             return
+
     except TypeError or IndexError as e:
         # log skipped txn
         log_error.critical(f"{e}: {txn} timestamp is missing.")
@@ -129,23 +135,23 @@ def format_data(
     # Format txn type
     try:
         txn_type = "Type: "
-        for item in txn[1]:
+        for item in t_type:
             txn_type += f"{item} "
         data.append(txn_type)
     except IndexError:
-        data.append(txn[1])
+        data.append(t_type)
 
     # Format txn amount
-    if len(txn[2]) == 0:
+    if len(t_swap) == 0:
         data.append("Swap: None")
     else:
         try:
             amount = "Swap: "
-            for i, item in enumerate(txn[2]):
+            for i, item in enumerate(t_swap):
                 if i % 2 == 0:
-                    amount += item + txn[2][i + 1] + " "
+                    amount += item + t_swap[i + 1] + " "
             data.append(amount)
         except IndexError:
-            data.append(txn[2])
+            data.append(t_swap)
 
-    return data
+    return data, t_flag

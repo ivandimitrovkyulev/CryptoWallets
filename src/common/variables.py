@@ -10,6 +10,7 @@ load_dotenv()
 TOKEN = os.getenv("TOKEN")
 CHAT_ID_ALERTS = os.getenv("CHAT_ID_ALERTS")
 CHAT_ID_DEBUG = os.getenv("CHAT_ID_DEBUG")
+CHAT_ID_SPECIAL = os.getenv("CHAT_ID_SPECIAL")
 
 
 time_format = "%Y-%m-%d %H:%M:%S, %Z"
@@ -31,6 +32,8 @@ max_request_wait_time = 30
 
 # List of strings to ignore if contained in the transaction info
 ignore_list = (
-    "0x0000…0000",
-    "play888.io",
+    '0x0000…0000',
+    'play888.io',
+    '1 Unknown NFT',
+    '4Gambling.io',
 )

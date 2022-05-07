@@ -69,7 +69,7 @@ elif args.multi:
         max_request_wait_time,
     )
 
-    program_name += "multiprocessing"
+    program_name += " multiprocessing"
     # Register function to be executed if script terminates
     register(exit_handler_program, program_name)
 
