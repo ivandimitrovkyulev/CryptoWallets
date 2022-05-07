@@ -69,10 +69,12 @@ def get_last_txns(
         table = root.find_class(element_id)[0]
 
     except IndexError:
+        # If element not found return an empty dictionary
         return {}
 
-    # Return table as a Python Dictionary
-    return scrape_table(table, no_of_txns)
+    else:
+        # Return table as a Python Dictionary
+        return scrape_table(table, no_of_txns)
 
 
 def scrape_single_wallet(

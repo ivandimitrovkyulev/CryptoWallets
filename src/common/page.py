@@ -72,21 +72,31 @@ def scrape_table(
     """
     transactions = {}
 
-    for index, row in enumerate(table.xpath('./div')):
-        # If limit reached, break
-        if index >= int(no_of_txns):
-            break
+    try:
+        for index, row in enumerate(table.xpath('./div')):
 
-        # Get link to transaction
-        link = row.xpath('./div/div/a/@href')[0]
+            # If limit reached, break
+            if index >= int(no_of_txns):
+                break
 
-        txn_list = []
-        for col in row.xpath('./div'):
-            # Get text for Txn, Type, Amount, Gas fee
-            info = col.xpath('.//text()')
-            txn_list.append(info)
+            # Get link to transaction
+            link = row.xpath('./div/div/a/@href')[0]
 
-        if len(txn_list) >= 4:
-            transactions[link] = txn_list
+            txn_list = []
+            for col in row.xpath('./div'):
+                # Get text for Txn, Type, Amount, Gas fee
+                info = col.xpath('.//text()')
+                txn_list.append(info)
 
-    return transactions
+            if len(txn_list) == 4:
+                transactions[link] = txn_list
+            elif len(txn_list) > 4:
+                txn_list = txn_list[:4]
+                transactions[link] = txn_list
+            elif len(txn_list) < 4:
+                [txn_list.append([]) for _ in range(4 - len(txn_list))]
+
+        return transactions
+
+    except IndexError or Exception:
+        return {}
