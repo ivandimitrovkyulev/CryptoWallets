@@ -106,6 +106,15 @@ Or to run an individual container for a single address:
 docker run --shm-size="2g" -it <image-id> python3 -m src.individual.scrape <address> <name>
 ```
 
+Or run all containers in **wallets.json** individually, where each wallet gets its own container:
+```
+python3 run_containers.py wallets.json
+```
+To stop all containers at once:
+```
+docker kill $(docker ps -q)
+```
+
 <br/>
 <br/>
 

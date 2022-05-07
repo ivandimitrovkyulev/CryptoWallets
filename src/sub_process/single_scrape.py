@@ -64,8 +64,12 @@ def get_last_txns(
     # Wait for website to respond with History Table
     wait_history_table(driver, element_name, wallet_name, wait_time, max_wait_time)
 
-    root = html.fromstring(driver.page_source)
-    table = root.find_class(element_id)[0]
+    try:
+        root = html.fromstring(driver.page_source)
+        table = root.find_class(element_id)[0]
+
+    except IndexError:
+        return {}
 
     # Return table as a Python Dictionary
     return scrape_table(table, no_of_txns)
