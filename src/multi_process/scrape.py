@@ -45,6 +45,7 @@ def refresh_tab(
 
     # Switch to window and Refresh tab
     driver.switch_to.window(tab_name)
+
     driver.refresh()
 
     # Wait for website to respond with History Table
@@ -89,10 +90,11 @@ def get_last_txns(
         root = html.fromstring(driver.page_source)
         table = root.find_class(element_id)[0]
 
-    except IndexError:
-        return {}
+        lock.release()
 
-    lock.release()
+    except IndexError:
+        lock.release()
+        return {}
 
     # Return table as a Python Dictionary
     return scrape_table(table, no_of_txns)

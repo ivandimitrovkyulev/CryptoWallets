@@ -1,51 +1,13 @@
 import json
-from lxml import html
+import os
 
-from selenium.webdriver import Chrome
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as ec
-from selenium.webdriver.support.ui import WebDriverWait
-
+from multiprocessing.dummy import Pool
+from src.multi_process.scrape import get_last_txns
 from src.common.driver.driver import chrome_driver
-from src.common.page import scrape_table
 from src.common.variables import (
     table_element_name,
     table_element_id,
 )
-
-
-def get_last_txns(
-        driver: Chrome,
-        tab_name: str,
-        element_name: str,
-        element_id: str,
-        no_of_txns: int,
-        max_wait_time: int,
-) -> dict:
-    """
-    Searches DeBank for an Address Transaction history and returns its latest transactions.
-
-    :param driver: Web driver instance
-    :param tab_name: Chrome Tab to switch to
-    :param element_name: Element name wait for
-    :param element_id: Element ID to scrape
-    :param no_of_txns: Number of transactions to return, up to 100
-    :param max_wait_time: Maximum time to wait for response
-    :returns: Python Dictionary with  transactions
-    """
-    driver.switch_to.window(tab_name)
-
-    try:
-        WebDriverWait(driver, max_wait_time).until(ec.presence_of_element_located(
-            (By.CLASS_NAME, element_name)))
-    except Exception:
-        return {}
-
-    root = html.fromstring(driver.page_source)
-    table = root.find_class(element_id)[0]
-
-    # Return table as a Python Dictionary
-    return scrape_table(table, no_of_txns)
 
 
 def print_last_txns(
@@ -73,8 +35,10 @@ def print_last_txns(
     args = [(chrome_driver, tab, table_element_name, table_element_id, no_txns, max_wait_time)
             for tab, wallet in zip(tab_names, wallet_names)]
 
-    for arg, address in zip(args, addr_dict):
-        result = get_last_txns(*arg)
+    with Pool(os.cpu_count()) as pool:
+        results = pool.starmap(get_last_txns, args)
+
+    for result, address in zip(results, addr_dict):
 
         if len(result) == 0:
             print(f"Address: {address}, {addr_dict[address]['name']}")

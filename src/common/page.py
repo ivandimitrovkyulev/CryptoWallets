@@ -40,7 +40,7 @@ def wait_history_table(
         except WebDriverException or TimeoutException:
             # Refresh page and log error
             driver.refresh()
-            log_error.warning(f"Error while trying to load transactions for {wallet_name}")
+            log_error.warning(f"Error while loading transactions. Wait time: {wait_time} secs; wallet: {wallet_name}")
 
             # If query infinitely continue loop
             if infinite:
