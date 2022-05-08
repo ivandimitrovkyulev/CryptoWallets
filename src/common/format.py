@@ -49,7 +49,7 @@ def format_data(
     :return: Optional Tuple of List with formatted data & transaction type flag
     """
     data = []
-    t_flag = 'normal'
+    t_flag = ''
 
     # If txn does not have the right structure log and return none---
     if not isinstance(txn, list):
@@ -71,12 +71,12 @@ def format_data(
     if 'Failed' in t_date:
         log_fail.info(f"{txn}")
         return
-    elif 'Approve' in t_type:
+    elif 'Approve' in t_type[0]:
         log_spam.info(f"{txn}")
         return
     elif 'Receive' in t_type:
         log_spam.info(f"{txn}")
-        t_flag = 'receive'
+        t_flag = 'spam'
 
     # Check against unwanted transactions
     for ignore in ignore_list:
@@ -144,6 +144,7 @@ def format_data(
     # Format txn amount
     if len(t_swap) == 0:
         data.append("Swap: None")
+        t_flag = 'spam'
     else:
         try:
             amount = "Swap: "
