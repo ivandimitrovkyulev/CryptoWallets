@@ -113,7 +113,7 @@ def send_message(
             telegram_send_message(message, telegram_chat_id=chat_id)
 
             # Send Telegram message to a dedicated chat
-            if CHAT_ID_SPECIAL and flag != 'receive':
+            if CHAT_ID_SPECIAL and flag != 'spam':
                 telegram_send_message(message, telegram_chat_id=CHAT_ID_SPECIAL)
 
             # Print result to terminal

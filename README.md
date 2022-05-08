@@ -39,6 +39,8 @@ TOKEN=<telegram-token-for-your-bot>
 CHAT_ID_ALERTS=<id-of-telegram-chat-for-alerts>
 
 CHAT_ID_DEBUG=<id-of-telegram-chat-for-debugging>
+
+CHAT_ID_SPECIAL=<id-of-telegram-chat-for-special-alerts>
 ```
 <br/>
 
