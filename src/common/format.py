@@ -67,7 +67,7 @@ def format_data(
     # Un-pack data
     t_date, t_type, t_swap, t_gas = txn
 
-    # Check against transaction type
+    # Check against transaction type and mark unwanted as 'spam'
     if 'Failed' in t_date:
         log_fail.info(f"{txn}")
         return
@@ -77,6 +77,12 @@ def format_data(
     elif 'Receive' in t_type:
         log_spam.info(f"{txn}")
         t_flag = 'spam'
+    # filter out NFT transactions
+    else:
+        for item in t_swap:
+            swap_info = item.lower()
+            if '#' in swap_info or 'nft' in swap_info:
+                t_flag = 'spam'
 
     # Check against unwanted transactions
     for ignore in ignore_list:
