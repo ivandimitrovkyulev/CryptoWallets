@@ -37,3 +37,12 @@ ignore_list = (
     '1 Unknown NFT',
     '4Gambling.io',
 )
+ignore_list_type = (
+    'claim',
+    'getreward',
+)
+ignore_list_swap = (
+    '#',
+    'nft',
+    'variabledebt',
+)

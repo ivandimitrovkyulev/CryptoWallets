@@ -13,6 +13,8 @@ from src.common.logger import (
 from src.common.variables import (
     time_format,
     ignore_list,
+    ignore_list_type,
+    ignore_list_swap,
 )
 
 
@@ -67,21 +69,27 @@ def format_data(
     # Un-pack data
     t_date, t_type, t_swap, t_gas = txn
 
-    # Check against transaction type and mark unwanted as 'spam'
+    # Return 0 if transaction is Failed or 'Approve'
     if 'Failed' in t_date:
         log_fail.info(f"{txn}")
         return
     elif 'Approve' in t_type[0]:
         log_spam.info(f"{txn}")
         return
-    elif 'Receive' in t_type:
-        log_spam.info(f"{txn}")
-        t_flag = 'spam'
-    # filter out NFT transactions
+
+    # filter out based on other spam criteria and mark as 'spam'
     else:
+        for item in t_type:
+            type_info = item.lower()
+            if 'receive' == type_info:
+                log_spam.info(f"{txn}")
+                t_flag = 'spam'
+            if type_info in ignore_list_type:
+                t_flag = 'spam'
+
         for item in t_swap:
             swap_info = item.lower()
-            if '#' in swap_info or 'nft' in swap_info:
+            if swap_info in ignore_list_swap:
                 t_flag = 'spam'
 
     # Check against unwanted transactions
