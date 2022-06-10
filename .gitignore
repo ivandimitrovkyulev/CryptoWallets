@@ -137,7 +137,6 @@ dmypy.json
 *.log
 
 # Project specific data
-wallets.json
-all_wallets.json
+*.json
 
 
